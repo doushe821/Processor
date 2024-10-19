@@ -51,7 +51,7 @@ int main()
             }
         }
         fprintf(output, "draw 96 64\n");
-        fprintf(output, "sleep 10000\n");
+        fprintf(output, "sleep 20000\n");
     }
     fprintf(output, "hlt");
     fclose(output);
