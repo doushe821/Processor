@@ -6,3 +6,7 @@ commands
 obj
 Makefile
 *.bin
+CG
+CodeGenBA
+01LTDUMP
+objectBA

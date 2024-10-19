@@ -190,7 +190,7 @@ int doCommand(SPU* Baikal)
         }
         case DRAW:
         {
-            fprintf(stderr, "\033[1J");
+            fprintf(stdout, "\033[1J");
             uint32_t width = Baikal->cmdSheet.buf[Baikal->ip + 1];
             uint32_t height = Baikal->cmdSheet.buf[Baikal->ip + 2];
             Baikal->ip += 3;
@@ -199,10 +199,10 @@ int doCommand(SPU* Baikal)
             {
                 for(uint32_t j = 0; j < width; j++)
                 {
-                    fprintf(stderr, "%c", ' ' + ('#' - ' ')*Baikal->ram[i*width + j]); //177 32 for space
+                    fprintf(stdout, "%c", ' ' + ('#' - ' ')*Baikal->ram[i*width + j]); //177 32 for space
 
                 }
-                fprintf(stderr, "\n");
+                fprintf(stdout, "\n");
             }
             return 0;
         }
