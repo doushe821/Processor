@@ -22,7 +22,7 @@ int LTDtor(label* LT)
     return 0;
 }
 
-int LTDUmp(LabelTable* LT)
+int LTDumpf(LabelTable* LT)
 {
     FILE* fp =  fopen("01LTDUMP", "w+b"); 
     if(fp == 0)
@@ -46,13 +46,29 @@ int LTDUmp(LabelTable* LT)
     return 0;
 }
 
+int LTDump(LabelTable* LT)
+{
+    fprintf(stderr, "\n\n");
+    for(size_t i = 0; i < LT->lnum; i++)
+    {
+        fprintf(stderr, "#### [%zu]  IPTARG = %d : NAME = \"%s\"", i, LT->labAr[i].ipTarg, LT->labAr[i].name);
+        if(i == LT->lnum)
+        {
+            fprintf(stderr, " <<<<<");
+        }
+        fprintf(stderr, "\n");
+    }
+    fprintf(stderr, "\n\n");
+    return 0;
+}
+
 int FindLabel(LabelTable* lt, char* buffer)
 {
     for(size_t i = 0; i < lt->lnum; i++)
     {
         if(strcmp(buffer, lt->labAr[i].name) == 0)
         {
-            return lt->labAr[i].ipTarg;
+            return i;
         }
     }
     return -1;

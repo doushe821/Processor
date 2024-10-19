@@ -23,7 +23,8 @@ struct LabelTable
 
 label* LTCtor(label* LT, size_t size);
 int LTDtor(label* LT);
-int LTDUmp(LabelTable* LT);
+int LTDumpf(LabelTable* LT);
+int LTDump(LabelTable* LT);
 int FindLabel(LabelTable* lt, char* buffer);
 
 

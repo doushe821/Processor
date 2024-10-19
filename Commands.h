@@ -14,10 +14,10 @@ enum commands
     POW = 0x0007,
     SQRT = 0x0008, 
     SIN = 0x0009,
-    PUSHR = 0x000A,
+
     POP = 0x000B,
     OUT = 0x0010,
-
+    RET = 0x0011,
     JMP = 0x0014, 
     JMB = 0x0015,
     JMA = 0x0016,
@@ -26,10 +26,17 @@ enum commands
     JMBE = 0x0019,
     JMAE = 0x001A,
     
+    SLEEP = 0x001D,
+    DRAW = 0x001E,
     HLT = 0x007F,
-    MEOW = 0x029A, 
 };
 
+const uint32_t RAM_REG_CONSTVAL = 7;
+const uint32_t RAM_REG = 6;
+const uint32_t RAM_CONSTVAL = 5;
+const uint32_t REG_CONSTVAL = 3;
+const uint32_t REG = 2;
+const uint32_t CONSTVAL = 1;
 
 struct Header
 {

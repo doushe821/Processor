@@ -1,66 +1,4 @@
-#include <stdio.h>
-#include <stdbool.h>
-#include <ctype.h>
-#include <string.h>
-#include <stdlib.h>
-
-#include "FileManager.h"
-#include "LabelTable.h"
-#include "Commands.h"
-#include "Stack.h"
-#include "StackDB.h"
 #include "Assembler.h"
-
-#include "BigMoney.h"
-
-enum ErrCodes
-{
-    FOPEN_ERROR = 1,
-    ASSEMBLER_ERROR,
-    READING_ERROR,
-    LTABLE_CREATION_ERROR,
-    CALLOC_ERROR,
-    BINARY_WRITING_ERROR,
-    UNDEFINED_LABEL,
-    STACK_CREATION_ERROR,
-};
-
-const size_t COMMANDNAME_MAX = 32; 
-
-bool IsReg(char* buf);
-
-const char CommandNames[32][COMMANDNAME_MAX] = 
-{"", "push", "", "add", "sub", "div", "mul", "pow",
- "sqrt", "sin", "", "pop", "", "", "", "", "out", "", 
- "", "", "jmp", "jmb", "jme", "jmn", "", "", "", "",
- "", "", "", "hlt"};
-
-struct Files // RENAME LATER
-{
-    FILE* source;
-    FILE* object;
-    bool err;
-};
-
-struct cmdSheet
-{
-    int* buf;
-    size_t size;
-};
-
-struct Assembly
-{
-    cmdSheet sheet;
-    Files files;
-    LabelTable LTable;
-    Stack_t* LStack;
-};
-
-
-int assembly(Assembly* Asm);
-struct Files CmdOpenFile(int c, char** v);
-int RecogniseCommand(char* buffer);
-int WriteBin(FILE* obj, int* cmd, uint32_t size);
 
 int main(int argc, char* argv[])
 {
@@ -86,9 +24,21 @@ int main(int argc, char* argv[])
     }
     
     if(assembly(&Asm) != 0)
-    {
-        
+    {  
         return ASSEMBLER_ERROR;
+    }
+
+    if(Asm.LTable.lnum > 0)
+    {
+        free(Asm.sheet.buf); // HAVE TO CLEAN CODE 
+        rewind(Asm.files.source);
+        
+        //ON_DEBUG(LTDump(&Asm.LTable));
+
+        if(assembly(&Asm) != 0)
+        {
+            return ASSEMBLER_ERROR;
+        }
     }
 
     if(WriteBin(Asm.files.object, Asm.sheet.buf, Asm.sheet.size) != 0)
@@ -119,51 +69,61 @@ int assembly(Assembly* Asm)
 
     while(ftell(Asm->files.source) < size)
     {
-        
+
+        //ON_DEBUG(fprintf(stderr, "## IP = %d\n", cycleIndex));
+        //ON_DEBUG(LTDump(&Asm->LTable));
+
         char buffer[COMMANDNAME_MAX] = {};  
         if(fscanf(Asm->files.source, "%s", buffer) == 0)
         {
             return READING_ERROR;
         }
+
         char* lmarker = NULL;
-        
         if((lmarker  = strchr(buffer, ':')) != NULL)
         {
-            
-            *lmarker = '\0';
-            
-            strcpy(Asm->LTable.labAr[Asm->LTable.lnum].name, buffer);
-            
-            Asm->LTable.labAr[Asm->LTable.lnum].ipTarg = cycleIndex;
-            Asm->LTable.lnum++;
-            continue;
+
+            ParseLabel(Asm, lmarker, buffer, cycleIndex);
+        
+            if(fscanf(Asm->files.source, "%s", buffer) == 0)
+            {
+                return READING_ERROR;
+            }
+
         }
         
         int command = RecogniseCommand(buffer);
 
-        ON_DEBUG(fprintf(stderr, "## Recognized command: [%d]\n", command));
+        //ON_DEBUG(fprintf(stderr, "## Recognized command: [%d]\n", command));
 
-        if(command == 1)
+        if(command == PUSH)
         {
+            cmdSheet[cycleIndex] = PUSH;
+            cycleIndex++;
+
             if(fscanf(Asm->files.source, "%s", buffer) == 0)
             {
                 return READING_ERROR;
             } 
 
-            if(IsReg(buffer))
-            {
-                cmdSheet[cycleIndex] = PUSHR;
-                cmdSheet[cycleIndex + 1] = atoi(buffer);
-                cycleIndex += 2;
-                continue;
-            }
-
-            cmdSheet[cycleIndex] = command;
-            cmdSheet[cycleIndex + 1] = atoi(buffer);
-            cycleIndex += 2;
+            ParsePush(Asm, buffer, &cycleIndex, &cmdSheet);
         }
 
-        else if(command == JMP || command == JMB || command ==  JMA || command == JME || command == JMN || command == JMBE || command == JMAE)
+        else if(command == POP)
+        {
+            cmdSheet[cycleIndex] = POP;
+            cycleIndex++;
+
+            if(fscanf(Asm->files.source, "%s", buffer) == 0)
+            {
+                return READING_ERROR;
+            } 
+    
+            ParsePop(Asm, buffer, &cycleIndex, &cmdSheet);
+        }
+
+        else if(command == JMP || command == JMB || command ==  JMA || command == JME || 
+                command == JMN || command == JMBE || command == JMAE)
         {
             cmdSheet[cycleIndex] = command;
             if(fscanf(Asm->files.source, "%s", buffer) == 0)
@@ -171,44 +131,75 @@ int assembly(Assembly* Asm)
                 return READING_ERROR;
             }
 
-            if(Asm->LTable.lnum > 0)
-            {
-                int lab = 0;
-                
-                if((lab = FindLabel(&Asm->LTable, buffer)) == -1)
-                {
-                    return UNDEFINED_LABEL;
-                }
-                
-                cmdSheet[cycleIndex + 1] = lab;
-                cycleIndex += 2;
-                continue;
-            }
-
-            else
-            {
-                cmdSheet[cycleIndex] = command;
-                cmdSheet[cycleIndex + 1] = atoi(buffer);
-                cycleIndex += 2;
-                continue; // MIGHT DELETE, ADDED FOR BETTER VISION
-            }
+            ParseJump(Asm, &cmdSheet, buffer, &cycleIndex);
+            
         }
 
-        else
+        else if(command == RET)
+        {
+            ParseRet(Asm, &cycleIndex, &cmdSheet);
+        }
+
+        else if(command == SLEEP)
+        {            
+            //ParseSleep(Asm, &cycleIndex, &cmdSheet);
+            cmdSheet[cycleIndex] = SLEEP;
+            cycleIndex++;
+
+
+            if(fscanf(Asm->files.source, "%s", buffer) == 0)
+            {
+                return READING_ERROR;
+            }
+
+
+            cmdSheet[cycleIndex] = atoi(buffer);    
+            cycleIndex++;
+        }
+
+        else if(command == DRAW)
+        {
+            //ParseDraw(Asm, &cycleIndex, &cmdSheet);
+            cmdSheet[cycleIndex] = DRAW;
+            cycleIndex++;
+
+            if(fscanf(Asm->files.source, "%s", buffer) == 0)
+            {
+                return READING_ERROR;
+            }
+
+            cmdSheet[cycleIndex] = atoi(buffer);
+            cycleIndex++;
+
+            if(fscanf(Asm->files.source, "%s", buffer) == 0)
+            {
+                return READING_ERROR;
+            }
+
+            cmdSheet[cycleIndex] = atoi(buffer);
+            cycleIndex++;
+
+        }
+
+        else if(command != 0)
         {
             cmdSheet[cycleIndex] = command;
+            cycleIndex++;
+        }
+        else
+        {
             cycleIndex++;
         }
     }
 
 
-    #ifndef NDEBUG
-    fprintf(stderr, "\n\n ## CMDSheet out: \n");
+    /*#ifndef NDEBUG
+    fprintf(stderr, "\n\n## CMDSheet out: \n");
     for(size_t i = 0; i < cycleIndex; i++)
     {
         fprintf(stderr, "## %d\n", cmdSheet[i]);
     }
-    #endif // NDEBUG3
+    #endif // NDEBUG3 */
 
     Asm->sheet.buf = cmdSheet;
     Asm->sheet.size = cycleIndex;
@@ -226,60 +217,53 @@ int WriteBin(FILE* obj, int* cmd, uint32_t size)
 }
 
 
-bool IsReg(char* buf)
+int FindReg(char* buf)
 {
-    ON_DEBUG(fprintf(stderr, "## PushBuf: %s\n", buf));
+    //ON_DEBUG(fprintf(stderr, "## ARG BUF: %s\n", buf));
     if(strncmp(buf, REG_NAMES[AX], 2) == 0)
     {
-        return true;
+        return AX;
     }
-    else if(strcmp(buf, REG_NAMES[BX]) == 0)
+    else if(strncmp(buf, REG_NAMES[BX], 2) == 0)
     {
-        return true;
+        return BX;
     }
-    else if(strcmp(buf, REG_NAMES[CX]) == 0)
+    else if(strncmp(buf, REG_NAMES[CX], 2) == 0)
     {
-        
-        return true;
+        return CX;
     }
-    else if(strcmp(buf, REG_NAMES[DX]) == 0)
+    else if(strncmp(buf, REG_NAMES[DX], 2) == 0)
     {
-        
-        return true;
+        return DX;
     }
-    else if(strcmp(buf, REG_NAMES[EX]) == 0)
+    else if(strncmp(buf, REG_NAMES[EX], 2) == 0)
     {
-        
-        return true;
+        return EX;
     }
-    else if(strcmp(buf, REG_NAMES[FX]) == 0)
-    {
-        
-        return true;
+    else if(strncmp(buf, REG_NAMES[FX], 2) == 0)
+    {   
+        return FX;
     }
-    else if(strcmp(buf, REG_NAMES[GX]) == 0)
+    else if(strncmp(buf, REG_NAMES[GX], 2) == 0)
     {
         
-        return true;
+        return GX;
     }
-    else if(strcmp(buf, REG_NAMES[HX]) == 0)
-    {
-        
-        return true;
+    else if(strncmp(buf, REG_NAMES[HX], 2) == 0)
+    {   
+        return HX;
     }
-    else if(strcmp(buf, REG_NAMES[IX]) == 0)
-    {
-        
-        return true;
+    else if(strncmp(buf, REG_NAMES[IX], 2) == 0)
+    {   
+        return IX;
     }
-    else if(strcmp(buf, REG_NAMES[NX]) == 0)
-    {
-        
-        return true;
+    else if(strncmp(buf, REG_NAMES[NX], 2) == 0)
+    {   
+        return NX;
     }
     else
     {
-        return false;
+        return -1;
     }
 }
 
@@ -320,11 +304,7 @@ int RecogniseCommand(char* buffer)
     else if(strcmp(buffer, CommandNames[SIN]) == 0)
     {
         return SIN;
-    }   
-    else if(strcmp(buffer, "meow") == 0)
-    {
-        return MEOW;
-    }                
+    }             
     else if(strcmp(buffer, CommandNames[OUT]) == 0)
     {
         return OUT;
@@ -356,6 +336,20 @@ int RecogniseCommand(char* buffer)
     else if(strcmp(buffer, CommandNames[JME]) == 0)
     {
         return JME;
+    }
+    else if(strcmp(buffer, CommandNames[RET]) == 0)
+    {
+        return RET;
+    }
+    else if(strcmp(buffer, CommandNames[SLEEP]) == 0)
+    {
+        return SLEEP;
+
+    }
+    else if(strcmp(buffer, CommandNames[DRAW]) == 0)
+    {
+        return DRAW;
+
     }
     else if(strcmp(buffer, CommandNames[31]) == 0)
     {
