@@ -11,6 +11,7 @@
 #include "../Stack/Stack.h"
 #include "../FileManager.h"
 #include "../Commands.h"
+#include "../doublecmp.h"
 
 #include "../BigMoney.h"
 
@@ -41,7 +42,7 @@ enum ErrCodes
 
 struct Buffer
 {
-    int* buf;
+    char* buf;
     int err;
     size_t size;
 };
@@ -50,9 +51,9 @@ struct SPU
 {
     Buffer cmdSheet;
     Stack_t* stk;
-    int Reg[10];
+    double Reg[10];
     size_t ip;
-    int ram[131072];
+    char ram[131072];
 };
 
 

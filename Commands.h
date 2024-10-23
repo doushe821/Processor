@@ -6,37 +6,38 @@
 
 enum commands
 {
-    PUSH = 0x0001,
-    ADD = 0x0003, 
-    SUB = 0x0004,
-    DIV = 0x0005,
-    MUL = 0x0006,
-    POW = 0x0007,
-    SQRT = 0x0008, 
-    SIN = 0x0009,
+    PUSH  = 0x0001,
+    ADD   = 0x0003, 
+    SUB   = 0x0004,
+    DIV   = 0x0005,
+    MUL   = 0x0006,
+    POW   = 0x0007,
+    SQRT  = 0x0008, 
+    SIN   = 0x0009,
 
-    POP = 0x000B,
-    OUT = 0x0010,
-    RET = 0x0011,
-    JMP = 0x0014, 
-    JMB = 0x0015,
-    JMA = 0x0016,
-    JME = 0x0017,
-    JMN = 0x0018,
-    JMBE = 0x0019,
-    JMAE = 0x001A,
-    
+    POP   = 0x000B,
+    OUT   = 0x0010,
+    JMP   = 0x0014, 
+    JMB   = 0x0015,
+    JMA   = 0x0016,
+    JME   = 0x0017,
+    JMN   = 0x0018,
+    JMBE  = 0x0019,
+    JMAE  = 0x001A,
+    CALL  = 0x001B,
+    RET   = 0x001C,
+     
     SLEEP = 0x001D,
-    DRAW = 0x001E,
-    HLT = 0x007F,
+    DRAW  = 0x001E,
+    HLT   = 0x001F,
 };
 
-const uint32_t RAM_REG_CONSTVAL = 7;
-const uint32_t RAM_REG = 6;
-const uint32_t RAM_CONSTVAL = 5;
-const uint32_t REG_CONSTVAL = 3;
-const uint32_t REG = 2;
-const uint32_t CONSTVAL = 1;
+const uint8_t RAM_REG_CONSTVAL = 7;
+const uint8_t RAM_REG          = 6;
+const uint8_t RAM_CONSTVAL     = 5;
+const uint8_t REG_CONSTVAL     = 3;
+const uint8_t REG              = 2; 
+const uint8_t CONSTVAL         = 1;
 
 struct Header
 {

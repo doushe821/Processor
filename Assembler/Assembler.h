@@ -35,12 +35,11 @@ const uint32_t sign = 44001;
 const size_t ARGLEN_MAX = 64;
 const size_t COMMANDNAME_MAX = 32; 
 
-int FindReg(char* buf);
 
 const char CommandNames[32][COMMANDNAME_MAX]    
 {"", "push", "", "add", "sub", "div", "mul", "pow",
  "sqrt", "sin", "", "pop", "", "", "", "", "out", "ret", 
- "", "", "jmp", "jmb", "jma","jme", "jmn", "jmbe", "jmae", "", "",
+ "", "", "jmp", "jmb", "jma","jme", "jmn", "jmbe", "jmae", "call", "ret",
  "sleep", "draw", "hlt"};
 
 enum ErrCodes
@@ -65,7 +64,7 @@ struct Files // RENAME LATER
 
 struct cmdSheet
 {
-    int* buf;
+    char* buf;
     size_t size;
 };
 
@@ -75,21 +74,43 @@ struct Assembly
     Files files;
     LabelTable LTable;
     Stack_t* LStack;
+    char* Source;
+    size_t SourceSize;
 };
 
+struct Token 
+{
+    char command[COMMANDNAME_MAX];
+    size_t size;
+    char* endptr;
+    char* startptr;
+    char type;
+    size_t objSize;
+    size_t ip;
+};
+
+
+int Bufferize(Assembly* Asm); 
 
 
 int assembly(Assembly* Asm);
 struct Files CmdOpenFile(int c, char** v);
 int RecogniseCommand(char* buffer);
-int WriteBin(FILE* obj, int* cmd, uint32_t size);
-int ParseLabel(Assembly* Asm, char* lmarker, char* buffer, int cycleIndex);
-int ParseJump(Assembly* Asm, int** cmdSheet, char* buffer, int* cycleIndex);
-int ParsePush(Assembly* Asm, char* buffer, int* cycleIndex, int** cmdSheet);
-int ParsePop(Assembly* Asm, char* buffer, int* cycleIndex, int** cmdSheet);
-int ParseRet(Assembly* Asm, int* cycleIndex, int** cmdSHeet);
+int WriteBin(FILE* obj, char* cmd, uint32_t size);
+
+uint32_t FindReg(char* buf);
+
+int GetCommand(Assembly* Asm, char* buffer, size_t* bread);
+
+int ParseLabel(Assembly* Asm, char* buffer, size_t bread, char* lmarker);
+
+int ParseJump (Assembly* Asm, char* buffer, int* cmdIndex);
+int ParsePush (Assembly* Asm, char* buffer, int* cmdIndex);
+int ParsePop  (Assembly* Asm, char* buffer, int* cmdindex);
+
+int ParseRet  (Assembly* Asm,               int* cycleIndex, char** cmdSHeet);
 int ParseSleep(Assembly* Asm, int* cycleIndex, int** cmdSheet);
-int ParseDraw(Assembly* Asm, int* cycleIndex, int** cmdSheet);
+int ParseDraw (Assembly* Asm,               int* cycleIndex, char** cmdSheet);
 
 
 

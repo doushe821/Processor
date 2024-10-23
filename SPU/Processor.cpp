@@ -10,24 +10,24 @@ int main(int argc, char* argv[])
     }
 
     Header head = {};
-
+    $;
     if(HeaderInit(&head, files.obj) != 0)
     {
         return HEADERINIT_ERROR;
     }
-
+    $;
     Buffer cmdSheet = Bufferise(files.obj, head);
     if(cmdSheet.buf == NULL)
     {      
         return BUFFERISATION_ERROR;
     }
     fclose(files.obj);
-
+    $;
     if(Process(cmdSheet) != 0)
     {
         return COMPILER_ERROR;
     }
-
+    $;
     free(cmdSheet.buf);
     return 0;
 }
@@ -57,15 +57,16 @@ int HeaderInit(Header* head, FILE* obj)
 int Process(Buffer buf)
 {
     SPU Baikal = {}; 
-    
-    if(StackInit(&Baikal.stk, 512, sizeof(*Baikal.cmdSheet.buf)) != 0)
+    $;
+    if(StackInit(&Baikal.stk, 512, sizeof(double)) != 0)
     {
         return STACK_INIT_ERROR;
     }
     Baikal.cmdSheet = buf; 
-    
+    $;
     while(true)
     {
+        
         //ON_DEBUG(fprintf(stderr, "## OPERATION CODE = %d\n", Baikal.cmdSheet.buf[Baikal.ip]));
         if(doCommand(&Baikal) == HLT)
         {
@@ -82,9 +83,9 @@ struct Buffer Bufferise(FILE* obj, const Header head)
 {
     struct Buffer Bout = {};
 
-    Bout.buf = (int*)calloc(head.size, sizeof(int));
+    Bout.buf = (char*)calloc(head.size, sizeof(char));
     Bout.size = head.size;
-    if(fread(Bout.buf, Bout.size, sizeof(*Bout.buf), obj) == 0)
+    if(fread(Bout.buf, Bout.size, sizeof(char), obj) == 0) // replace char 
     {
         Bout.err = READING_ERROR;
     }

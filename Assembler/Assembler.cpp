@@ -3,89 +3,115 @@
 int main(int argc, char* argv[])
 {
     Assembly Asm = {};
-    Asm.files = CmdOpenFile(argc, argv); // RENAME LATER
+    Asm.files = CmdOpenFile(argc, argv);  // SOURCE OBJECT OPENED
     
-    if((Asm.LTable.labAr = LTCtor(Asm.LTable.labAr, LTLENGTH_MAX)) == NULL)
+    if((Asm.LTable.labAr = LTCtor(Asm.LTable.labAr, LTLENGTH_MAX)) == NULL) // LT CREATED
     {
         
         return LTABLE_CREATION_ERROR;
     }
-
-    if(StackInit(&Asm.LStack, LTLENGTH_MAX, sizeof(int)) != 0)
+    $;
+    if(StackInit(&Asm.LStack, LTLENGTH_MAX, sizeof(int)) != 0) // MAKE IT SQUIRT NO DOUBLE NEEDED
     {
         return STACK_CREATION_ERROR;
     }
-    
+    $;
 
     if(Asm.files.err)
     {
         fprintf(stderr, "Can't open source or create object file.\n");
         return FOPEN_ERROR;
     }
-    
+    $;
+    if(Bufferize(&Asm) != 0)
+    {
+        return READING_ERROR;
+    }
+
+    $;
+    fclose(Asm.files.source); // SOURCE CLOSED
+    $;
     if(assembly(&Asm) != 0)
     {  
+        fprintf(stderr, "First assembling error\n");
         return ASSEMBLER_ERROR;
     }
 
+    $;
+    ON_DEBUG(fprintf(stderr, "FSDFKLDJKSLKDSJ LNUM: %zu\n", Asm.LTable.lnum));
+
     if(Asm.LTable.lnum > 0)
     {
+        $;
         free(Asm.sheet.buf); // HAVE TO CLEAN CODE 
-        rewind(Asm.files.source);
+        $; 
         
         //ON_DEBUG(LTDump(&Asm.LTable));
 
         if(assembly(&Asm) != 0)
         {
+            fprintf(stderr, "Second assembling error\n");
             return ASSEMBLER_ERROR;
         }
     }
+    $;
 
+    /*for(size_t i = 0; i < Asm.sheet.size; i++)
+    {
+        fprintf(stderr, "%c\n", Asm.sheet.buf[i]);
+    }*/
+    
     if(WriteBin(Asm.files.object, Asm.sheet.buf, Asm.sheet.size) != 0)
     {
         return BINARY_WRITING_ERROR;
     }
+    $;
 
-    LTDtor(Asm.LTable.labAr);
-    fclose(Asm.files.object);
-    fclose(Asm.files.source);
+    free(Asm.sheet.buf);
+    $;
+    LTDtor(Asm.LTable.labAr); // LT DESTROYED
+    $;
+    fclose(Asm.files.object); // OBJECT CLOSED
+    $;
     return 0;
 }
-
 
 
 int assembly(Assembly* Asm)
 {
     
-    size_t size = GetFileSize(Asm->files.source); // default option doesn't work FIX ME
-    
-    int* cmdSheet = (int*)calloc(size/2, sizeof(int));
-    if(cmdSheet == NULL)
+    int cmdIndex = 0;
+    size_t bread = 0;
+
+    while(bread < Asm->SourceSize)
     {
-        return CALLOC_ERROR;
-    }
+        ON_DEBUG(fprintf(stderr, "## IP (CMD INDEX) = %d\n", cmdIndex));
+        ON_DEBUG(LTDump(&Asm->LTable));
 
-    int cycleIndex = 0;
+        char buffer[COMMANDNAME_MAX] = {}; 
 
-    while(ftell(Asm->files.source) < size)
-    {
-
-        //ON_DEBUG(fprintf(stderr, "## IP = %d\n", cycleIndex));
-        //ON_DEBUG(LTDump(&Asm->LTable));
-
-        char buffer[COMMANDNAME_MAX] = {};  
-        if(fscanf(Asm->files.source, "%s", buffer) == 0)
+        if(GetCommand(Asm, buffer, &bread) != 0)
         {
+            fprintf(stderr, "nigga cant read\n");
             return READING_ERROR;
         }
+        ON_DEBUG(fprintf(stderr, "%s\n", buffer));
 
         char* lmarker = NULL;
         if((lmarker  = strchr(buffer, ':')) != NULL)
         {
 
-            ParseLabel(Asm, lmarker, buffer, cycleIndex);
-        
-            if(fscanf(Asm->files.source, "%s", buffer) == 0)
+            ParseLabel(Asm, buffer, cmdIndex, lmarker);
+
+            size_t blen = strlen(buffer);
+            for(size_t i = 0; i < blen; i++)
+            {
+                buffer[i] = '\0';
+            }
+
+            ON_DEBUG(fprintf(stderr, "6969696996 %s\n", buffer));
+
+            if(GetCommand(Asm, buffer, &bread) != 0)
             {
                 return READING_ERROR;
             }
@@ -94,132 +120,104 @@ int assembly(Assembly* Asm)
         
         int command = RecogniseCommand(buffer);
 
-        //ON_DEBUG(fprintf(stderr, "## Recognized command: [%d]\n", command));
+        ON_DEBUG(fprintf(stderr, "## Recognized command: [%d]\n", command));
 
         if(command == PUSH)
         {
-            cmdSheet[cycleIndex] = PUSH;
-            cycleIndex++;
+            Asm->sheet.buf[cmdIndex] = (char)PUSH; // HAVE TO CAST TO CONTINUE USING ENUm
+            cmdIndex++;
 
-            if(fscanf(Asm->files.source, "%s", buffer) == 0)
+            if(GetCommand(Asm, buffer, &bread) != 0)
             {
                 return READING_ERROR;
-            } 
+            }
 
-            ParsePush(Asm, buffer, &cycleIndex, &cmdSheet);
+            ParsePush(Asm, buffer, &cmdIndex);
         }
 
         else if(command == POP)
         {
-            cmdSheet[cycleIndex] = POP;
-            cycleIndex++;
+            Asm->sheet.buf[cmdIndex] = (char)POP;
+            cmdIndex++;
 
-            if(fscanf(Asm->files.source, "%s", buffer) == 0)
+            if(GetCommand(Asm, buffer, &bread) != 0)
             {
                 return READING_ERROR;
-            } 
+            }
     
-            ParsePop(Asm, buffer, &cycleIndex, &cmdSheet);
+            ParsePop(Asm, buffer, &cmdIndex);
         }
 
         else if(command == JMP || command == JMB || command ==  JMA || command == JME || 
                 command == JMN || command == JMBE || command == JMAE)
         {
-            cmdSheet[cycleIndex] = command;
-            if(fscanf(Asm->files.source, "%s", buffer) == 0)
+            Asm->sheet.buf[cmdIndex] = command;
+            cmdIndex++;
+
+            if(GetCommand(Asm, buffer, &bread) != 0)
             {
                 return READING_ERROR;
             }
 
-            ParseJump(Asm, &cmdSheet, buffer, &cycleIndex);
+            ParseJump(Asm, buffer, &cmdIndex);
             
         }
-
-        else if(command == RET)
-        {
-            ParseRet(Asm, &cycleIndex, &cmdSheet);
-        }
-
-        else if(command == SLEEP)
-        {            
-            //ParseSleep(Asm, &cycleIndex, &cmdSheet);
-            cmdSheet[cycleIndex] = SLEEP;
-            cycleIndex++;
-
-
-            if(fscanf(Asm->files.source, "%s", buffer) == 0)
-            {
-                return READING_ERROR;
-            }
-
-
-            cmdSheet[cycleIndex] = atoi(buffer);    
-            cycleIndex++;
-        }
-
-        else if(command == DRAW)
-        {
-            //ParseDraw(Asm, &cycleIndex, &cmdSheet);
-            cmdSheet[cycleIndex] = DRAW;
-            cycleIndex++;
-
-            if(fscanf(Asm->files.source, "%s", buffer) == 0)
-            {
-                return READING_ERROR;
-            }
-
-            cmdSheet[cycleIndex] = atoi(buffer);
-            cycleIndex++;
-
-            if(fscanf(Asm->files.source, "%s", buffer) == 0)
-            {
-                return READING_ERROR;
-            }
-
-            cmdSheet[cycleIndex] = atoi(buffer);
-            cycleIndex++;
-
-        }
-
         else if(command != 0)
         {
-            cmdSheet[cycleIndex] = command;
-            cycleIndex++;
+            Asm->sheet.buf[cmdIndex] = command;
+            cmdIndex++;
         }
         else
         {
-            cycleIndex++;
+            cmdIndex++;
         }
     }
 
-
+    Asm->sheet.size = cmdIndex;
     /*#ifndef NDEBUG
-    fprintf(stderr, "\n\n## CMDSheet out: \n");
+    fprintf(stderr, "\n\n## Asm->sheet.buf out: \n");
     for(size_t i = 0; i < cycleIndex; i++)
     {
-        fprintf(stderr, "## %d\n", cmdSheet[i]);
+        fprintf(stderr, "## %d\n", Asm->sheet.buf[i]);
     }
     #endif // NDEBUG3 */
-
-    Asm->sheet.buf = cmdSheet;
-    Asm->sheet.size = cycleIndex;
-
     return 0;
 
 }
 
-int WriteBin(FILE* obj, int* cmd, uint32_t size)
+int WriteBin(FILE* obj, char* cmd, uint32_t size)
 {
     uint32_t headtofile[sizeofHeader] = {sign, version, size, 0};
     fwrite(headtofile, sizeof(int), sizeofHeader, obj);
-    fwrite(cmd, sizeof(int), size, obj);
+    fwrite(cmd, sizeof(char), size, obj);
     return 0;
 }
 
 
-int FindReg(char* buf)
+int GetCommand(Assembly* Asm, char* buffer, size_t* bread)
 {
-    //ON_DEBUG(fprintf(stderr, "## ARG BUF: %s\n", buf));
+    char* commandptr = NULL;
+
+    if((commandptr = strchr(Asm->Source + *bread, ' ')) == NULL)
+    {
+        return READING_ERROR;
+    }
+
+    if(commandptr - (Asm->Source + *bread) > COMMANDNAME_MAX)
+    {
+        return SYNTAX_ERROR;
+    }
+    char bbb[COMMANDNAME_MAX] = {};
+    strncpy(buffer, Asm->Source + *bread, commandptr - (Asm->Source + *bread));
+    fprintf(stderr, "7777777777777777%s\n", buffer);
+    *bread += commandptr - (Asm->Source + *bread) + 1; // +1 SO NEXT STRCHR DOESN'T INCLUDE LAST SEPARATION MARK
+    fprintf(stderr, "$$ BREAD = %zu\n", *bread);
+    return 0;
+}
+
+uint32_t FindReg(char* buf)
+{
+    //ON_DEBUG(fprintf(stderr, "  ARG BUF: %s\n", buf));
     if(strncmp(buf, REG_NAMES[AX], 2) == 0)
     {
         return AX;
@@ -269,6 +267,7 @@ int FindReg(char* buf)
 
 int RecogniseCommand(char* buffer)
 {
+    fprintf(stderr, "## CMD BUFFER : %s\n", buffer);
     if(strcmp(buffer, CommandNames[PUSH]) == 0)
     {
         return PUSH;
@@ -351,7 +350,7 @@ int RecogniseCommand(char* buffer)
         return DRAW;
 
     }
-    else if(strcmp(buffer, CommandNames[31]) == 0)
+    else if(strcmp(buffer, CommandNames[HLT]) == 0)
     {
         return HLT;
     }        
@@ -422,4 +421,43 @@ struct Files CmdOpenFile(int c, char** v)
     }
 
     return fl;
+}
+
+
+int Bufferize(Assembly* Asm)
+{
+    Asm->SourceSize = GetFileSize(Asm->files.source); // default option doesn't work FIX ME
+    $;
+    fprintf(stderr, "Soource size = %zu\n", Asm->SourceSize);
+    Asm->Source = (char*)calloc(Asm->SourceSize, sizeof(char));
+    $;
+    if(fread(Asm->Source, Asm->SourceSize, sizeof(char), Asm->files.source) == 0)
+    {
+        fprintf(stderr, "Reading error\n");
+        return READING_ERROR;
+    }
+    $;
+    for(size_t i = 0; i < Asm->SourceSize; i++)
+    {
+        fprintf(stderr, "i befor: %zu\n", i);
+        char* nlineptr = NULL;
+        if((nlineptr = strchr(Asm->Source + i, '\n')) != NULL)
+        {
+            *nlineptr = ' ';
+            $;
+            i += nlineptr - (Asm->Source + i);
+        }
+        fprintf(stderr, "i after: %zu\n", i);
+    }
+    $;
+
+    Asm->sheet.buf = (char*)calloc(Asm->SourceSize, 2*sizeof(char));
+
+
+    if(Asm->sheet.buf == NULL)
+    {
+        return CALLOC_ERROR;
+    }
+
+    return 0;
 }

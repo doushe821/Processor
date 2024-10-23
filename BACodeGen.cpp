@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include "FileManager.h"
-// 96x64
 
 int main()
 {
@@ -23,8 +22,6 @@ int main()
     fprintf(stderr, "%zu\n", size);
     fread(buffer, size, sizeof(char), fp);
     fclose(fp);
-
-    size_t prevVal = 0;
 
     for(size_t j = 0; j < size; j += PAGE_SIZE)
     {

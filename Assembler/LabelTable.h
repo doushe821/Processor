@@ -10,7 +10,7 @@ const size_t LTLENGTH_MAX = 32;
 
 struct label
 {
-    int ipTarg;
+    uint32_t ipTarg;
     char name[LABELNAME_MAX];
 };
 

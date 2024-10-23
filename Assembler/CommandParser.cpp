@@ -1,6 +1,6 @@
 #include "Assembler.h"
 
-int ParsePop(Assembly* Asm, char* buffer, int* cycleIndex, int** cmdSheet)
+int ParsePop(Assembly* Asm, char* buffer, int* cmdIndex)
 {
     char* cptr = NULL;
     char* eptr = NULL;
@@ -13,10 +13,10 @@ int ParsePop(Assembly* Asm, char* buffer, int* cycleIndex, int** cmdSheet)
     {
         if((plusptr = strchr(buffer, '+')) != NULL)
         {
-            (*cmdSheet)[*cycleIndex] = RAM_REG_CONSTVAL;
-            (*cycleIndex)++;
+            Asm->sheet.buf[*cmdIndex] = RAM_REG_CONSTVAL;
+            (*cmdIndex)++;
 
-            //ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", RAM_REG_CONSTVAL));
+            ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", RAM_REG_CONSTVAL));
 
             if((rg = FindReg(buffer + 1)) == -1) // buffer + (cptr - buffer)
             {
@@ -24,8 +24,8 @@ int ParsePop(Assembly* Asm, char* buffer, int* cycleIndex, int** cmdSheet)
                 return SYNTAX_ERROR;
             }
 
-            (*cmdSheet)[*cycleIndex] = rg;
-            (*cycleIndex)++;
+            memcpy(Asm->sheet.buf + *cmdIndex, &rg, sizeof(rg));
+            (*cmdIndex) += sizeof(rg);
             
             if((eptr = strchr(buffer, ']')) == NULL)
             {
@@ -34,30 +34,32 @@ int ParsePop(Assembly* Asm, char* buffer, int* cycleIndex, int** cmdSheet)
             }
 
 
-            (*cmdSheet)[*cycleIndex] = atoi(buffer + (eptr - plusptr + 1));
-            (*cycleIndex)++;
+            uint32_t ramNum = atoi(buffer + (eptr - plusptr + 1));
+            memcpy(Asm->sheet.buf + *cmdIndex, &ramNum, sizeof(ramNum));
+            (*cmdIndex) += sizeof(ramNum);
         }
 
         else if((rg = FindReg(buffer + 1)) != -1) // buffer + (cptr - buffer)
         {
-            (*cmdSheet)[*cycleIndex] = RAM_REG;
-            (*cycleIndex)++;
+            Asm->sheet.buf[*cmdIndex] = RAM_REG;
+            (*cmdIndex)++;
 
-            //ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", RAM_REG));    
+            ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", RAM_REG));    
 
-            (*cmdSheet)[*cycleIndex] = rg;
-            (*cycleIndex)++;
+            memcpy(Asm->sheet.buf + *cmdIndex, &rg, sizeof(rg));
+            (*cmdIndex) += sizeof(rg);
         }
 
         else 
         {
-            (*cmdSheet)[*cycleIndex] = RAM_CONSTVAL;
-            (*cycleIndex)++;
+            Asm->sheet.buf[*cmdIndex] = RAM_CONSTVAL;
+            (*cmdIndex)++;
 
-            //ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", RAM_CONSTVAL));
+            ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", RAM_CONSTVAL));
             
-            (*cmdSheet)[*cycleIndex] = atoi(buffer + 1);
-            (*cycleIndex)++;
+            uint32_t ramNum = atoi(buffer + 1);
+            memcpy(Asm->sheet.buf + *cmdIndex, &ramNum, sizeof(ramNum));
+            (*cmdIndex) += sizeof(ramNum);
         }
     }
 
@@ -68,16 +70,16 @@ int ParsePop(Assembly* Asm, char* buffer, int* cycleIndex, int** cmdSheet)
             return SYNTAX_ERROR;
         }
 
-        (*cmdSheet)[*cycleIndex] = REG;
-        (*cycleIndex)++;
-        (*cmdSheet)[*cycleIndex] = rg;
-        (*cycleIndex)++;
+        Asm->sheet.buf[*cmdIndex] = REG;
+        (*cmdIndex)++;
+        memcpy(Asm->sheet.buf + *cmdIndex, &rg, sizeof(rg));
+        (*cmdIndex) += sizeof(rg);
     }
 
     return 0;
 }
 
-int ParsePush(Assembly* Asm, char* buffer, int* cycleIndex, int** cmdSheet)
+int ParsePush(Assembly* Asm, char* buffer, int* cmdIndex)
 {
 
     char* cptr = NULL;
@@ -91,8 +93,8 @@ int ParsePush(Assembly* Asm, char* buffer, int* cycleIndex, int** cmdSheet)
     {
         if((plusptr = strchr(buffer, '+')) != NULL)
         {
-            (*cmdSheet)[*cycleIndex] = RAM_REG_CONSTVAL;
-            (*cycleIndex)++;
+            Asm->sheet.buf[*cmdIndex] = RAM_REG_CONSTVAL;
+            (*cmdIndex)++;
             
             ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", RAM_REG_CONSTVAL));
 
@@ -102,8 +104,9 @@ int ParsePush(Assembly* Asm, char* buffer, int* cycleIndex, int** cmdSheet)
                 return SYNTAX_ERROR;
             }
 
-            (*cmdSheet)[*cycleIndex] = rg;
-            (*cycleIndex)++;
+
+            memcpy(Asm->sheet.buf + *cmdIndex, &rg, sizeof(uint32_t));
+            (*cmdIndex) += sizeof(uint32_t);
             
             if((eptr = strchr(buffer, ']')) == NULL)
             {
@@ -112,35 +115,38 @@ int ParsePush(Assembly* Asm, char* buffer, int* cycleIndex, int** cmdSheet)
             }
 
 
-            (*cmdSheet)[*cycleIndex] = atoi(buffer + (eptr - plusptr + 1));
-            (*cycleIndex)++;
+            uint32_t ramNum = atoi(buffer + (eptr - plusptr + 1));
+            memcpy(Asm->sheet.buf + *cmdIndex, &ramNum, sizeof(uint32_t));
+            (*cmdIndex) += sizeof(ramNum);
         }
 
         else if((rg = FindReg(buffer + 1)) != -1) // buffer + (cptr - buffer)
         {
-            (*cmdSheet)[*cycleIndex] = RAM_REG;
-            (*cycleIndex)++;
+            Asm->sheet.buf[*cmdIndex] = RAM_REG;
+            (*cmdIndex)++;
 
-            //ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", RAM_REG));    
+            ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", RAM_REG));    
 
-            (*cmdSheet)[*cycleIndex] = rg;
-            (*cycleIndex)++;
+            memcpy(Asm->sheet.buf + *cmdIndex, &rg, sizeof(rg));
+            (*cmdIndex) += sizeof(rg);
         }
         else 
         {
-            (*cmdSheet)[*cycleIndex] = RAM_CONSTVAL;
-            (*cycleIndex)++;
+            Asm->sheet.buf[*cmdIndex] = RAM_CONSTVAL;
+            (*cmdIndex)++;
 
-            //ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", RAM_CONSTVAL));
+            ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", RAM_CONSTVAL));
             
-            (*cmdSheet)[*cycleIndex] = atoi(buffer + 1);
-            (*cycleIndex)++;
+            uint32_t ramCNum = atoi(buffer + 1);
+
+            memcpy(Asm->sheet.buf + *cmdIndex, &ramCNum, sizeof(ramCNum));
+            (*cmdIndex) += sizeof(ramCNum);
         }
     }
     else if((plusptr = strchr(buffer, '+')) != NULL)
     {
-        (*cmdSheet)[*cycleIndex] = REG_CONSTVAL;
-        (*cycleIndex)++;
+        Asm->sheet.buf[*cmdIndex] = REG_CONSTVAL;
+        (*cmdIndex)++;
 
         ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", REG_CONSTVAL));
 
@@ -150,36 +156,39 @@ int ParsePush(Assembly* Asm, char* buffer, int* cycleIndex, int** cmdSheet)
             return SYNTAX_ERROR;
         }
 
-        (*cmdSheet)[*cycleIndex] = rg;
-        (*cycleIndex)++;
+        memcpy(Asm->sheet.buf + *cmdIndex, &rg, sizeof(rg));
+        (*cmdIndex) += sizeof(rg);
 
-        (*cmdSheet)[*cycleIndex] = atoi(buffer + (plusptr - buffer) + 1);
-        (*cycleIndex)++; 
+
+        uint32_t ramNum = atoi(buffer + (plusptr - buffer) + 1);
+        memcpy(Asm->sheet.buf + *cmdIndex, &ramNum, sizeof(ramNum));
+        (*cmdIndex) += sizeof(ramNum); 
 
     }
     else if((rg = FindReg(buffer)) != -1)
     {
-        (*cmdSheet)[*cycleIndex] = REG;
-        (*cycleIndex)++;
+        Asm->sheet.buf[*cmdIndex] = REG;
+        (*cmdIndex)++;
 
-        //ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", REG));
+        ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", REG));
 
-        (*cmdSheet)[*cycleIndex] = rg;
-        (*cycleIndex)++;
+        memcpy(Asm->sheet.buf + *cmdIndex, &rg, sizeof(rg));
+        (*cmdIndex) += sizeof(rg);
     }
     else
     {
-        (*cmdSheet)[*cycleIndex] = CONSTVAL;
-        (*cycleIndex)++;
-        (*cmdSheet)[*cycleIndex] = atoi(buffer);
-        (*cycleIndex)++;
+        Asm->sheet.buf[*cmdIndex] = CONSTVAL;
+        (*cmdIndex)++;
+        double cVal = atoi(buffer);
+        memcpy(Asm->sheet.buf + *cmdIndex, &cVal, sizeof(cVal));
+        (*cmdIndex) += sizeof(cVal);
         
-        //ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", CONSTVAL));
+        ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", CONSTVAL));
     }
     return 0;
 }
 
-int ParseRet(Assembly* Asm, int* cycleIndex, int** cmdSheet)
+int ParseRet(Assembly* Asm, int* cycleIndex, char** cmdSheet)
 {
     *cmdSheet[*cycleIndex] = JMP;
     (*cycleIndex)++;    
@@ -209,7 +218,7 @@ int ParseSleep(Assembly* Asm, int* cycleIndex, int** cmdSheet)
     return 0;
 }
 
-int ParseDraw(Assembly* Asm, int* cycleIndex, int** cmdSheet)
+int ParseDraw(Assembly* Asm, int* cycleIndex, char** cmdSheet)
 {
     *cmdSheet[*cycleIndex] = DRAW;
     (*cycleIndex)++;
@@ -240,27 +249,31 @@ int ParseDraw(Assembly* Asm, int* cycleIndex, int** cmdSheet)
     return 0;
 }
 
-int ParseJump(Assembly* Asm, int** cmdSheet, char* buffer, int* cycleIndex)
+int ParseJump(Assembly* Asm, char* buffer, int* cmdIndex)
 {
     ON_DEBUG(fprintf(stderr, "## JMP ARG: %s\n", buffer));
             
     if(isdigit(buffer[0]))
     {
-        *cmdSheet[*cycleIndex + 1] = atoi(buffer);
-        ON_DEBUG(fprintf(stderr, "## JMP ARG ADDED: %d\n", atoi(buffer)));
-        *cycleIndex += 2;                        // JUMP CODE AND ITS ARGUMENT
+
+        uint32_t jumpIP =  atoi(buffer);
+        memcpy(Asm->sheet.buf + *cmdIndex, &jumpIP, sizeof(jumpIP));
+        *cmdIndex += sizeof(jumpIP);
+        
+        ON_DEBUG(fprintf(stderr, "## JMP ARG ADDED: %d\n", atoi(buffer)));              
         return 0;
+
     }
             
     else
     {
-        int labVal = 0;
+        uint32_t labVal = 0;
                 
         if((labVal = FindLabel(&Asm->LTable, buffer)) == -1) // LABEL IS NOT IN THE TABLE YET
         {
             strncpy(Asm->LTable.labAr[Asm->LTable.lnum].name, buffer, COMMANDNAME_MAX);
+            *cmdIndex += sizeof(Asm->LTable.labAr[Asm->LTable.lnum].ipTarg);
             Asm->LTable.lnum++;
-            *cycleIndex += 2;   // JUMP CODE AND ITS ARGUMENT
             ON_DEBUG(fprintf(stderr, "## LABEL NAME ADDED: %s\n", buffer));
             ON_DEBUG(LTDump(&Asm->LTable));
             return 0;
@@ -268,21 +281,26 @@ int ParseJump(Assembly* Asm, int** cmdSheet, char* buffer, int* cycleIndex)
 
         else
         {
-            (*cmdSheet)[*cycleIndex + 1] = Asm->LTable.labAr[labVal].ipTarg;
-            *cycleIndex += 2;                    // JUMP CODE AND ITS ARGUMENT
+
+            ON_DEBUG(fprintf(stderr, "$$$ %lu\n", sizeof(Asm->LTable.labAr[labVal].ipTarg)));
+            ON_DEBUG(fprintf(stderr, "$$$ IP TARGET = %u\n", Asm->LTable.labAr[labVal].ipTarg));
+            
+            memcpy(Asm->sheet.buf + *cmdIndex, &Asm->LTable.labAr[labVal].ipTarg, sizeof(Asm->LTable.labAr[labVal].ipTarg));
+            (*cmdIndex) += sizeof(Asm->LTable.labAr[labVal].ipTarg);
             return 0;
         }
     }
 }
 
-int ParseLabel(Assembly* Asm, char* lmarker, char* buffer, int cycleIndex)
+int ParseLabel(Assembly* Asm, char* buffer, size_t cmdIndex, char* lmarker)
 {
         int labVal = 0;
         *lmarker = '\0';
         if((labVal = FindLabel(&Asm->LTable, buffer)) == -1)
         {
             strcpy(Asm->LTable.labAr[Asm->LTable.lnum].name, buffer);
-            Asm->LTable.labAr[Asm->LTable.lnum].ipTarg = cycleIndex;
+            Asm->LTable.labAr[Asm->LTable.lnum].ipTarg = cmdIndex;
+            fprintf(stderr, "$$$$$ %u\n", Asm->LTable.labAr[Asm->LTable.lnum].ipTarg);
             Asm->LTable.lnum++;
 
             ON_DEBUG(fprintf(stderr, "## LABEL ADDED: %s\n", buffer));
@@ -293,7 +311,7 @@ int ParseLabel(Assembly* Asm, char* lmarker, char* buffer, int cycleIndex)
         else if(Asm->LTable.labAr[labVal].ipTarg == -1)
         {
 
-            Asm->LTable.labAr[labVal].ipTarg = cycleIndex; 
+            Asm->LTable.labAr[labVal].ipTarg = cmdIndex; 
 
             ON_DEBUG(fprintf(stderr, "## LABEL VALUE ADDED: %s = %d\n", buffer,Asm->LTable.labAr[labVal].ipTarg));
             ON_DEBUG(LTDump(&Asm->LTable));
