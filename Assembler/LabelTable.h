@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 const size_t LABELNAME_MAX = 32;
 const size_t LTLENGTH_MAX = 32;

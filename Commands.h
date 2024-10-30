@@ -6,31 +6,42 @@
 
 enum commands
 {
-    PUSH  = 0x0001,
-    ADD   = 0x0003, 
-    SUB   = 0x0004,
-    DIV   = 0x0005,
-    MUL   = 0x0006,
-    POW   = 0x0007,
-    SQRT  = 0x0008, 
-    SIN   = 0x0009,
+    CMD_PUSH  = 0x0001,
+    CMD_ADD   = 0x0003, 
+    CMD_SUB   = 0x0004,
+    CMD_DIV   = 0x0005,
+    CMD_MUL   = 0x0006,
+    CMD_POW   = 0x0007,
+    CMD_SQRT  = 0x0008, 
+    CMD_SIN   = 0x0009,
 
-    POP   = 0x000B,
-    OUT   = 0x0010,
-    JMP   = 0x0014, 
-    JMB   = 0x0015,
-    JMA   = 0x0016,
-    JME   = 0x0017,
-    JMN   = 0x0018,
-    JMBE  = 0x0019,
-    JMAE  = 0x001A,
-    CALL  = 0x001B,
-    RET   = 0x001C,
+    CMD_POP   = 0x000B,
+    CMD_OUT   = 0x0010,
+
+    CMD_IN    = 0x0011,
+
+    CMD_JMP   = 0x0014, 
+    CMD_JMB   = 0x0015,
+    CMD_JMA   = 0x0016,
+    CMD_JME   = 0x0017,
+    CMD_JMN   = 0x0018,
+    CMD_JMBE  = 0x0019,
+    CMD_JMAE  = 0x001A,
+    CMD_CALL  = 0x001B,
+    CMD_RET   = 0x001C,
      
-    SLEEP = 0x001D,
-    DRAW  = 0x001E,
-    HLT   = 0x001F,
+    CMD_SLEEP = 0x001D,
+    CMD_DRAW  = 0x001E,
+    CMD_HLT   = 0x001F,
 };
+
+const char CommandNames[NUMBER_OF_COMMANDS][COMMANDNAME_MAX] = 
+{
+    "null", "push", "null", "add", "sub", "div", "mul", "pow",
+    "sqrt", "sin", "null", "pop", "null", "null", "null", "null", "out", "in", 
+    "null", "null", "jmp", "jmb", "jma","jme", "jmn", "jmbe", "jmae", "call", "ret",
+    "sleep", "draw", "hlt"
+}; // massive of structures
 
 const uint8_t RAM_REG_CONSTVAL = 7;
 const uint8_t RAM_REG          = 6;
@@ -47,8 +58,9 @@ struct Header
     uint32_t reserverd;
 };
 
-const size_t sizeofHeader = 4;
-
+const size_t SIZE_OF_HEADER = 4;
+const size_t NUMBER_OF_REGS = 10;
+const size_t REGNAME_MAX = 2;
 const char REG_NAMES[10][3] = 
 {
     "NX", "AX", "BX", "CX", "DX", "EX", "FX", "GX", "HX", "IX",

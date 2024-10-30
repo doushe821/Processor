@@ -166,14 +166,9 @@ int VoidIntDump(Stack_t* stk)
     
     fprintf(log, 
     "########################## STACK INFO ##########################\n"
-    "##CALLER STACK NAME: %s\n"
-    "## CALLER STACK POINTER: %p\n"
-    "## CALLER FILE    : %s\n"
-    "## CALLER FUNCTION: %s\n"
-    "## LINE          = %d\n"
     "## STACK SIZE    = %zu\n"
     "## STACK CAPACIY = %zu\n"
-    "## STACK DATA: %p\n", stk->stkName, stk, stk->file, stk->func, stk->line, stk->size, stk->capacity, (char*)stk->data);
+    "## STACK DATA: %p\n", stk->size, stk->capacity, (char*)stk->data);
        
     fprintf(log, "## DATA BUFFER: \n");
     
@@ -188,8 +183,10 @@ int VoidIntDump(Stack_t* stk)
     
     fprintf(log, "### TOP CANARY: %d\n", *(int*)((char*)stk->data + (stk->capacity + 1)*stk->elSize));
 
+    #ifndef NDEBUG
     fprintf(log, "##  DATA HASH SUM: %zu\n", stk->DataHash);
     fprintf(log, "##  STRUCT HASH SUM: %zu\n", stk->StructHash);
+    #endif
 
     fprintf(log, "## ERRORS: ");
     

@@ -6,8 +6,8 @@
 
 #ifndef NDEBUG
 typedef u_int64_t hash_t;
+hash_t hash(const void* data, size_t size);
 #endif
 
-hash_t hash(const void* data, size_t size);
 
 #endif

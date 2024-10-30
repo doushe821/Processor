@@ -179,7 +179,7 @@ int ParsePush(Assembly* Asm, char* buffer, int* cmdIndex)
     {
         Asm->sheet.buf[*cmdIndex] = CONSTVAL;
         (*cmdIndex)++;
-        double cVal = atoi(buffer);
+        double cVal = atof(buffer);
         memcpy(Asm->sheet.buf + *cmdIndex, &cVal, sizeof(cVal));
         (*cmdIndex) += sizeof(cVal);
         
@@ -188,64 +188,32 @@ int ParsePush(Assembly* Asm, char* buffer, int* cmdIndex)
     return 0;
 }
 
-int ParseRet(Assembly* Asm, int* cycleIndex, char** cmdSheet)
+int ParseSleep(Assembly* Asm, char* buffer, int* cmdIndex)
 {
-    *cmdSheet[*cycleIndex] = JMP;
-    (*cycleIndex)++;    
-    uint32_t addr = 0;
-    StackPop(Asm->LStack, &addr);
-    *cmdSheet[*cycleIndex] = addr;
-    (*cycleIndex)++;
-    return 0;
-}
 
-int ParseSleep(Assembly* Asm, int* cycleIndex, int** cmdSheet)
-{
-    *cmdSheet[*cycleIndex] = SLEEP;
-    (*cycleIndex)++;
-
-    char buffer[COMMANDNAME_MAX] = {};
-
-    if(fscanf(Asm->files.source, "%s", buffer) == 0)
-    {
-        return READING_ERROR;
-    }
-
-
-    *cmdSheet[*cycleIndex] = atoi(buffer);    
-    (*cycleIndex)++;
+    uint32_t time = atoi(buffer);
+    memcpy(Asm->sheet.buf + *cmdIndex, &time, sizeof(time));
+    (*cmdIndex) += sizeof(time);
 
     return 0;
 }
 
-int ParseDraw(Assembly* Asm, int* cycleIndex, char** cmdSheet)
+int ParseDraw(Assembly* Asm, char* buffer, int* cmdIndex)
 {
-    *cmdSheet[*cycleIndex] = DRAW;
-    (*cycleIndex)++;
-
-    char buffer[COMMANDNAME_MAX] = {};
-
-    if(fscanf(Asm->files.source, "%s", buffer) == 0)
+    char* divisor = strchr(buffer, 'x');   
+    if(divisor == NULL)
     {
-        return READING_ERROR;
-    }
+        return SYNTAX_ERROR;
+    }     
 
-    *cmdSheet[*cycleIndex] = atoi(buffer);
-    (*cycleIndex)++;
+    uint32_t width  = atoi(buffer);
+    memcpy(Asm->sheet.buf + *cmdIndex, &width, sizeof(width));
+    (*cmdIndex) += sizeof(width);
 
-    if(fscanf(Asm->files.source, "%s", buffer) == 0)
-    {
-        return READING_ERROR;
-    }
-
-    *cmdSheet[*cycleIndex] = atoi(buffer);
-    (*cycleIndex)++;
-
-    if(fscanf(Asm->files.source, "%s", buffer) == 0)
-    {
-        return READING_ERROR;
-    }
-            
+    uint32_t height = atoi(divisor + 1);
+    memcpy(Asm->sheet.buf + *cmdIndex, &height, sizeof(height));
+    (*cmdIndex) += sizeof(height);
+    
     return 0;
 }
 
@@ -290,6 +258,35 @@ int ParseJump(Assembly* Asm, char* buffer, int* cmdIndex)
             return 0;
         }
     }
+}
+
+int ParseCall(Assembly* Asm, char* buffer, int* cmdIndex)
+{
+    ON_DEBUG(fprintf(stderr, "## CALL ARG: %s\n", buffer));
+            
+    uint32_t labVal = 0;
+            
+    if((labVal = FindLabel(&Asm->LTable, buffer)) == -1) // LABEL IS NOT IN THE TABLE YET
+    {
+        strncpy(Asm->LTable.labAr[Asm->LTable.lnum].name, buffer, COMMANDNAME_MAX);
+        *cmdIndex += sizeof(Asm->LTable.labAr[Asm->LTable.lnum].ipTarg);
+        Asm->LTable.lnum++;
+        ON_DEBUG(fprintf(stderr, "## LABEL NAME ADDED: %s\n", buffer));
+        ON_DEBUG(LTDump(&Asm->LTable));
+        return 0;
+    }
+
+    else
+    {
+
+        ON_DEBUG(fprintf(stderr, "$$$ %lu\n", sizeof(Asm->LTable.labAr[labVal].ipTarg)));
+        ON_DEBUG(fprintf(stderr, "$$$ IP TARGET = %u\n", Asm->LTable.labAr[labVal].ipTarg));
+        
+        memcpy(Asm->sheet.buf + *cmdIndex, &Asm->LTable.labAr[labVal].ipTarg, sizeof(Asm->LTable.labAr[labVal].ipTarg));
+        (*cmdIndex) += sizeof(Asm->LTable.labAr[labVal].ipTarg);
+        return 0;
+    }
+    
 }
 
 int ParseLabel(Assembly* Asm, char* buffer, size_t cmdIndex, char* lmarker)

@@ -12,7 +12,7 @@ int StackInit(Stack_t** stk, size_t InitCapacity, size_t ElemSize)
     {
         if((*stk)->initialised)
         {
-            return DOUBLE_INITIALISATION;
+            return 0;
         }
     }
 
@@ -55,7 +55,6 @@ int StackInit(Stack_t** stk, size_t InitCapacity, size_t ElemSize)
     (*stk)->StructHash = hash(stk, sizeof(Stack_t));
     #endif // NDEBUG
     
-    //fprintf(stderr, "Capacity: %zu\n Size: %zu\n Data pointer: %p\n Elem size: %zu\n Status: %d\n", (*stk)->capacity, (*stk)->size, (*stk)->data, (*stk)->elSize, (*stk)->initialised);
     return NO_ERRORS;
 }
                    
@@ -106,6 +105,62 @@ int StackPush(Stack_t* stk, void* elem)
     return NO_ERRORS;
 }
 
+int VStackInit(Stack_t** stk, size_t InitCapacity)
+{
+    
+    if(*stk != NULL)
+    {
+        if((*stk)->initialised)
+        {
+            return 0;
+        }
+    }
+
+    *stk = (Stack_t*)calloc(1, sizeof(Stack_t));
+
+    if(InitCapacity < MinCapacity)  
+    {
+        if(((*stk)->data = calloc(MinCapacity, sizeof(char))) == NULL)
+        {
+            fprintf(stderr, "Dynamic Memory dead\n");
+            (*stk)->Error += ALLOC_ERROR;
+            return ALLOC_ERROR; 
+        }
+        (*stk)->capacity = MinCapacity;
+    }    
+    else
+    {
+        if(((*stk)->data = calloc(InitCapacity, sizeof(char))) == NULL)
+        {
+            fprintf(stderr, "Dynamic Memory dead\n");
+            (*stk)->Error += ALLOC_ERROR;
+            return ALLOC_ERROR; 
+        }
+        (*stk)->capacity = InitCapacity;
+    }
+
+    (*stk)->elSize = sizeof(char);
+    (*stk)->size = 0;
+    (*stk)->initialised = 1;
+    
+    return NO_ERRORS;
+}
+
+int VStackPush(Stack_t* stk, void* elem, size_t size)
+{
+    if(stk->size >= stk->capacity)
+    {
+        if(StackResize(stk, false) != 0)
+        {
+            stk->Error += ALLOC_ERROR;
+            free(stk->data);
+            return ALLOC_ERROR;
+        }
+    }
+    cpybytes((char*)stk->data + stk->size*sizeof(char), elem, size);
+    stk->size += size;
+    return NO_ERRORS;
+}
 
 int StackPop(Stack_t* stk, void* elem)
 {

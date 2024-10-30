@@ -47,10 +47,10 @@ int main()
                 subbuffer[i] = 1;
             }
         }
-        fprintf(output, "draw 96 64\n");
-        fprintf(output, "sleep 20000\n");
+        fprintf(output, "draw 96x64\n");
+        fprintf(output, "sleep 10000\n");
     }
-    fprintf(output, "hlt");
+    fprintf(output, "hlt\n");
     fclose(output);
     free(buffer);
     return 0;

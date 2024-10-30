@@ -57,6 +57,9 @@ int StackDtor(Stack_t* stk);
 int StackResize(Stack_t* stk, bool downSizeFlag);
 void* wrecalloc(void* ptr, size_t num, size_t size, size_t PrevSize);
 
+int VStackPush(Stack_t* stk, void* elem, size_t size);
+int VStackInit(Stack_t** stk, size_t InitCapacity);
+
 int ErrParse(Stack_t* stk);
 
 #endif

@@ -23,7 +23,8 @@ const uint32_t REG_MASK = 2;
 const uint32_t C_MASK = 1;
 
 
-
+const size_t CALLER_STACK_CAPACITY = 128;
+const size_t INITIAL_STACK_CAPACITY = 512;
 
 enum ErrCodes
 {
@@ -42,25 +43,29 @@ enum ErrCodes
 
 struct Buffer
 {
-    char* buf;
-    int err;
+    char*  buf;
+    int    err;
     size_t size;
 };
 
 struct SPU
 {
-    Buffer cmdSheet;
+    Buffer   cmdSheet;
+    size_t   ip;
+
     Stack_t* stk;
-    double Reg[10];
-    size_t ip;
-    char ram[131072];
+    Stack_t* CallStk;
+
+    double   Reg[10];
+    char     ram[131072];
+    
 };
 
 
 struct Files
 {
     FILE* obj;
-    bool err;
+    bool  err;
 };
 
 struct Files CmdOpenFile(int c, char** v);

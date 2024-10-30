@@ -23,24 +23,69 @@
 
 #define ON_DEBUG(code) code
 #else
-#define ON_DEBUG() 
+#define ON_DEBUG(code) 
+
 #endif
 
 
-const uint32_t version = 1;
-const uint32_t sign = 44001;
+const uint32_t H_VERSION = 1;
+const uint32_t H_SIGN = 44001;
 
 
 
 const size_t ARGLEN_MAX = 64;
 const size_t COMMANDNAME_MAX = 32; 
+const size_t NUMBER_OF_COMMANDS = 32;
 
+// FIXME fixed?
 
-const char CommandNames[32][COMMANDNAME_MAX]    
-{"", "push", "", "add", "sub", "div", "mul", "pow",
- "sqrt", "sin", "", "pop", "", "", "", "", "out", "ret", 
- "", "", "jmp", "jmb", "jma","jme", "jmn", "jmbe", "jmae", "call", "ret",
- "sleep", "draw", "hlt"};
+/*struct Command_t
+{
+    char Name[COMMANDNAME_MAX];
+    char OpCode;
+};*/
+
+/*Command_t Commands[NUMBER_OF_COMMANDS]
+{
+    {"NULL", 0},
+    {"push", 1},
+    {"NULL", 2},
+    {"add", 3},
+    {"sub", 4},
+    {"div", 5},
+    {"mul", 6},
+    {"pow", 7},
+    {"sqrt", 8},
+    {"sin", 9},
+    {"NULL", 10},
+    {"pop", 11},
+    {"NULL", 12},
+    {"NULL", 13},
+    {"NULL", 14},
+    {"NULL", 15},
+    {"out", 16},
+    {"in", 17},
+    {"NULL", 18},
+    {"NULL", 19},
+    {"jmp", 20},
+    {"jmb", 21},
+    {"jma", 22},
+    {"jme", 23},
+    {"jmn", 24},
+    {"jmbe", 25},
+    {"jmae", 26},
+    {"call", 27},
+    {"ret", 28},
+    {"sleep", 29},
+    {"draw", 30},
+    {"hlt", 31},
+};*/ // use it
+
+/*
+!!
+reuse stack for dynamic memory
+!!
+*/
 
 enum ErrCodes
 {
@@ -53,40 +98,30 @@ enum ErrCodes
     UNDEFINED_LABEL,
     STACK_CREATION_ERROR,
     SYNTAX_ERROR,
+    MEMORY_REALOCATION_FAILURE,
 };
 
-struct Files // RENAME LATER
+struct Files
 {
     FILE* source;
     FILE* object;
-    bool err;
+    bool  err;
 };
 
 struct cmdSheet
 {
-    char* buf;
+    char*  buf;
     size_t size;
 };
 
 struct Assembly
 {
-    cmdSheet sheet;
-    Files files;
-    LabelTable LTable;
-    Stack_t* LStack;
-    char* Source;
-    size_t SourceSize;
-};
-
-struct Token 
-{
-    char command[COMMANDNAME_MAX];
-    size_t size;
-    char* endptr;
-    char* startptr;
-    char type;
-    size_t objSize;
-    size_t ip;
+    cmdSheet    sheet;
+    Files       files;
+    LabelTable  LTable;
+    Stack_t*    LStack;
+    char*       Source;
+    size_t      SourceSize;
 };
 
 
@@ -94,7 +129,7 @@ int Bufferize(Assembly* Asm);
 
 
 int assembly(Assembly* Asm);
-struct Files CmdOpenFile(int c, char** v);
+struct Files CmdOpenFile(const int argc, char** argv);
 int RecogniseCommand(char* buffer);
 int WriteBin(FILE* obj, char* cmd, uint32_t size);
 
@@ -107,11 +142,9 @@ int ParseLabel(Assembly* Asm, char* buffer, size_t bread, char* lmarker);
 int ParseJump (Assembly* Asm, char* buffer, int* cmdIndex);
 int ParsePush (Assembly* Asm, char* buffer, int* cmdIndex);
 int ParsePop  (Assembly* Asm, char* buffer, int* cmdindex);
-
-int ParseRet  (Assembly* Asm,               int* cycleIndex, char** cmdSHeet);
-int ParseSleep(Assembly* Asm, int* cycleIndex, int** cmdSheet);
-int ParseDraw (Assembly* Asm,               int* cycleIndex, char** cmdSheet);
-
+int ParseCall (Assembly* Asm, char* buffer, int* cmdindex);
+int ParseSleep(Assembly* Asm, char* buffer, int* cmdIndex);
+int ParseDraw (Assembly* Asm, char* buffer, int* cmdIndex); // const
 
 
 

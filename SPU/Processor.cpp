@@ -10,24 +10,24 @@ int main(int argc, char* argv[])
     }
 
     Header head = {};
-    $;
+    
     if(HeaderInit(&head, files.obj) != 0)
     {
         return HEADERINIT_ERROR;
     }
-    $;
+    
     Buffer cmdSheet = Bufferise(files.obj, head);
     if(cmdSheet.buf == NULL)
     {      
         return BUFFERISATION_ERROR;
     }
     fclose(files.obj);
-    $;
+    
     if(Process(cmdSheet) != 0)
     {
         return COMPILER_ERROR;
     }
-    $;
+    
     free(cmdSheet.buf);
     return 0;
 }
@@ -57,23 +57,25 @@ int HeaderInit(Header* head, FILE* obj)
 int Process(Buffer buf)
 {
     SPU Baikal = {}; 
-    $;
-    if(StackInit(&Baikal.stk, 512, sizeof(double)) != 0)
+    
+    if(StackInit(&Baikal.stk, INITIAL_STACK_CAPACITY, sizeof(double)) != 0)
     {
         return STACK_INIT_ERROR;
     }
+
+    if(StackInit(&Baikal.CallStk, CALLER_STACK_CAPACITY, sizeof(uint32_t)) != 0)
+    {
+        return STACK_INIT_ERROR;
+    }
+
     Baikal.cmdSheet = buf; 
-    $;
+    
     while(true)
     {
-        
-        //ON_DEBUG(fprintf(stderr, "## OPERATION CODE = %d\n", Baikal.cmdSheet.buf[Baikal.ip]));
-        if(doCommand(&Baikal) == HLT)
+        if(doCommand(&Baikal) == CMD_HLT)
         {
             break;
         }
-        //ON_DEBUG(fprintf(stderr, "## IP = %zu\n", Baikal.ip));
-        //usleep(50000);
     }
     StackDtor(Baikal.stk);
     return 0;
@@ -93,7 +95,7 @@ struct Buffer Bufferise(FILE* obj, const Header head)
     return Bout;
 }
 
-struct Files CmdOpenFile(int c, char** v)
+struct Files CmdOpenFile(int c, char** v) // TODO filemanager 
 {
     FILE* object = NULL;
     struct Files file = {};
@@ -119,5 +121,4 @@ struct Files CmdOpenFile(int c, char** v)
     }
 
     return file;
-    
 }
