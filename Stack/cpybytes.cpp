@@ -2,7 +2,7 @@
 #include <stdio.h> //DEBUG
 
 
-void cpybytes(void* dest, void* source, size_t size)
+void cpybytes(void* dest, const void* source, size_t size)
 {
     uint64_t buf8 = 0;
     uint32_t buf4 = 0;

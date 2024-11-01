@@ -1,293 +1,16 @@
 #include "Processor.h"
 
-static int HandlePush(SPU* Baikal);
-static int HandlePop (SPU* Baikal);
-static int HandleRet (SPU* Baikal);
-static int HandleCall(SPU* Baikal);
 
 int doCommand(SPU* Baikal)
 {
-    switch(Baikal->cmdSheet.buf[Baikal->ip])
-    {
-        case CMD_PUSH:
-        {
-            
-            Baikal->ip++;
-            HandlePush(Baikal);
-            return 0;
-        }
-        case CMD_POP:
-        {
-            Baikal->ip++;
-            HandlePop(Baikal);
-            return 0;
-        }
-        case CMD_ADD:
-        {
-            double a = 0;
-            double b = 0;
-            StackPop(Baikal->stk, &a); // Should check?
-            StackPop(Baikal->stk, &b); // Should check?
-            double c = a + b; // a += b for optimisation?
-            StackPush(Baikal->stk, &c); // Should check?
-            Baikal->ip++;
-            return 0;
-        }
-        case CMD_SUB:
-        {
-            double a = 0;
-            double b = 0;
-            StackPop(Baikal->stk, &a); // Should check?
-            StackPop(Baikal->stk, &b); // Should check?
-            double c = b - a; // b -= a for optimisation?
-            StackPush(Baikal->stk, &c); // Should check?
-            Baikal->ip++;
-            return 0;
-        }
-        case CMD_DIV:
-        {
-            double a = 0;
-            double b = 0;
-            StackPop(Baikal->stk, &a); // Should check?
-            StackPop(Baikal->stk, &b); // Should check?
-            double c = b / a; // b /= a for optimisation?
-            StackPush(Baikal->stk, &c); // Should check?
-            Baikal->ip++;
-            return 0;
-        }
-        case CMD_MUL:
-        {
-            double a = 0;
-            double b = 0;
-            StackPop(Baikal->stk, &a); // Should check?
-            StackPop(Baikal->stk, &b); // Should check?
-            double c = b * a; // b *= a for optimisation?
-            StackPush(Baikal->stk, &c); // Should check?
-            Baikal->ip++;
-            return 0;
-        }
-        case CMD_POW:
-        {
-            double a = 0;
-            double b = 0;
-            StackPop(Baikal->stk, &a); // Should check?
-            StackPop(Baikal->stk, &b); // Should check?
-            for(int i = 0; i < a; i++)
-            {
-                b *= b;
-            }
-            StackPush(Baikal->stk, &b); // Should check?
-            Baikal->ip++;
-            return 0;
-        }
-        case CMD_SQRT:
-        {
-            Baikal->ip += 1;
-            double a = 0;
-            StackPop(Baikal->stk, &a);
-            double b = sqrt(a);
-            StackPush(Baikal->stk, &b);
-            return 0; // UNDER DEVELOPMENT
-        }
-        case CMD_SIN:
-        {
-            Baikal->ip += 1;
-            return -169; // UNDER DEVELOPMENT
-        }
-        case CMD_OUT:
-        {
-            double a = 0;
-            StackPop(Baikal->stk, &a);
-            printf("%.6lf\n", a);
-            Baikal->ip += 1;
-            return 0;
-        }
-        case CMD_JMP:
-        {
-            Baikal->ip += 1;
-            uint32_t ip = 0;
-            memcpy(&ip, Baikal->cmdSheet.buf + Baikal->ip, sizeof(ip));
-            Baikal->ip = ip;
-            return 0;
-        }
-        case CMD_JMB: 
-        {
-            Baikal->ip += 1;
-            double a = 0;
-            double b = 0;
-            StackPop(Baikal->stk, &a);
-            StackPop(Baikal->stk, &b);
-            if(doublecmp(b, a, EPS) < 0)
-            {
-                uint32_t ip = 0;
-                memcpy(&ip, Baikal->cmdSheet.buf + Baikal->ip, sizeof(ip));
-                Baikal->ip = ip;
-                return 0;
-            }
-            Baikal->ip += sizeof(uint32_t);
-            return 0;
-        }
-        case CMD_JMA: 
-        {
-            Baikal->ip += 1;
-            double a = 0;
-            double b = 0;
-            StackPop(Baikal->stk, &a);
-            StackPop(Baikal->stk, &b);
-            if(doublecmp(b, a, EPS) > 0)
-            {
-                uint32_t ip = 0;
-                memcpy(&ip, Baikal->cmdSheet.buf + Baikal->ip, sizeof(ip));
-                Baikal->ip = ip;
-                return 0;
-            }
-            Baikal->ip += sizeof(uint32_t);
-            return 0;
-        }
-        case CMD_JME: // TODO prefixes
-        {
-            Baikal->ip += 1;
-            double a = 0;
-            double b = 0;
-            StackPop(Baikal->stk, &a);
-            StackPop(Baikal->stk, &b);
-            if(doublecmp(b, a, EPS) == 0)
-            {
-                uint32_t ip = 0;
-                memcpy(&ip, Baikal->cmdSheet.buf + Baikal->ip, sizeof(ip));
-                Baikal->ip = ip;
-                return 0;
-            }
-            Baikal->ip += sizeof(uint32_t);
-            return 0;
-        }
-        case CMD_JMN: 
-        {
-            Baikal->ip += 1;
-            double a = 0;
-            double b = 0;
-            StackPop(Baikal->stk, &a);
-            StackPop(Baikal->stk, &b);
-            if(doublecmp(b, a, EPS) != 0)
-            {
-                uint32_t ip = 0;
-                memcpy(&ip, Baikal->cmdSheet.buf + Baikal->ip, sizeof(ip));
-                Baikal->ip = ip;
-                return 0;
-            }
-            Baikal->ip += sizeof(uint32_t);
-            return 0;
-        }
-        case CMD_JMBE: 
-        {
-            Baikal->ip += 1;
-            double a = 0;
-            double b = 0;
-            StackPop(Baikal->stk, &a);
-            StackPop(Baikal->stk, &b);
-            if(doublecmp(b, a, EPS) <= 0)
-            {
-                uint32_t ip = 0;
-                memcpy(&ip, Baikal->cmdSheet.buf + Baikal->ip, sizeof(ip));
-                Baikal->ip = ip;
-                return 0;
-            }
-            Baikal->ip += sizeof(uint32_t);
-            return 0;
-        }
-        case CMD_JMAE: 
-        {
-            Baikal->ip += 1;
-            double a = 0;
-            double b = 0;
-            StackPop(Baikal->stk, &a);
-            StackPop(Baikal->stk, &b);
-            if(doublecmp(b, a, EPS) >= 0)
-            {
-                uint32_t ip = 0;
-                memcpy(&ip, Baikal->cmdSheet.buf + Baikal->ip, sizeof(ip));
-                Baikal->ip = ip;
-                return 0;
-            }
-            Baikal->ip += sizeof(uint32_t);
-            return 0;
-        }
-        case CMD_CALL:
-        {
-            Baikal->ip += 1;
-            HandleCall(Baikal);
-            return 0;
-        }
-        case CMD_RET:
-        {
-            HandleRet(Baikal);
-            return 0;
-        }
-        case CMD_SLEEP:
-        {
-            Baikal->ip += 1;
-            uint32_t slpTime = 0;
-            memcpy(&slpTime, Baikal->cmdSheet.buf + Baikal->ip, sizeof(slpTime));
-            usleep(slpTime);
-            Baikal->ip += sizeof(slpTime);
-            
-
-            return 0;
-        }
-        case CMD_DRAW:
-        {
-            Baikal->ip += 1;
-            fprintf(stdout, "\033[1J");
-            uint32_t width  = 0;
-            uint32_t height = 0;
-
-            memcpy(&width, Baikal->cmdSheet.buf + Baikal->ip, sizeof(width));
-
-            Baikal->ip += sizeof(width);
-            memcpy(&height, Baikal->cmdSheet.buf + Baikal->ip, sizeof(height));
-            Baikal->ip += sizeof(height);
-
-
-            for(uint32_t i = 0; i < height; i++)
-            {
-                for(uint32_t j = 0; j < width; j++)
-                {
-                    double out = 0;
-                    char pixel = 0;
-                    memcpy(&out, Baikal->ram + sizeof(out)*(i*width + j), sizeof(out));                  
-                    if(doublecmp(out, 0, EPS) != 0)
-                    {
-                        pixel = 1;
-                    }
-                    fprintf(stdout, "%c", ' ' + ('#' - ' ')*pixel);
-                }
-                fprintf(stdout, "\n");
-            }
-            return 0;
-        }
-        case CMD_IN:
-        {
-            Baikal->ip += 1;
-            double a = 0;
-            if(scanf("%lf", &a) == 0)
-            {
-                return READING_ERROR;
-            }
-            StackPush(Baikal->stk, &a);
-            return 0;
-        }
-        case CMD_HLT:
-        {
-            return CMD_HLT;
-        }
-    }
-    return UNDEFINED_ERROR; // TODO
+    CommandsStruct[Baikal->cmdSheet.buf[Baikal->ip]].HandleFunc(Baikal);
 }
 
 
 
-static int HandleCall(SPU* Baikal)
+int HandleCall(SPU* Baikal)
 {
+    Baikal->ip += 1;
     uint32_t ip = 0;
     memcpy(&ip, Baikal->cmdSheet.buf + Baikal->ip, sizeof(ip));
     Baikal->ip += sizeof(ip);
@@ -298,7 +21,7 @@ static int HandleCall(SPU* Baikal)
     return 0;
 }
 
-static int HandleRet(SPU* Baikal)
+int HandleRet(SPU* Baikal)
 {
     uint32_t retIP = 0;
     StackPop(Baikal->CallStk, &retIP);
@@ -306,11 +29,9 @@ static int HandleRet(SPU* Baikal)
     return 0;
 }
 
-static int HandlePush(SPU* Baikal)
+int HandlePush(SPU* Baikal)
 {
-    //ON_DEBUG(fprintf(stderr, "## VAL FOR IP = %d\n", Baikal->cmdSheet.buf[Baikal->ip]));
-    //ON_DEBUG(fprintf(stderr, "## VAL FOR IP + 1 = %d\n", Baikal->cmdSheet.buf[Baikal->ip]));
-
+    Baikal->ip++;
     uint8_t ArgCode = 0;
     memcpy(&ArgCode, Baikal->cmdSheet.buf + Baikal->ip, sizeof(ArgCode));
     Baikal->ip += sizeof(ArgCode);
@@ -376,12 +97,14 @@ static int HandlePush(SPU* Baikal)
 
 
 
-static int HandlePop(SPU* Baikal)
+int HandlePop(SPU* Baikal)
 {
+
+    Baikal->ip++;
 
     uint8_t ArgCode = Baikal->cmdSheet.buf[Baikal->ip];
     
-    (Baikal->ip) += 1;
+    Baikal->ip++;
 
     void* addr = 0;
     uint32_t tRes = 0;
@@ -420,4 +143,279 @@ static int HandlePop(SPU* Baikal)
     StackPop(Baikal->stk, addr);
 
     return 0; //TODO err codes
+}
+
+int HandleAdd(SPU* Baikal)
+{
+    double a = 0;
+    double b = 0;
+    StackPop(Baikal->stk, &a);
+    StackPop(Baikal->stk, &b);
+    double c = a + b; 
+    StackPush(Baikal->stk, &c);
+    Baikal->ip++;
+    return 0;
+}
+
+int HandleSub(SPU* Baikal)
+{
+    double a = 0;
+    double b = 0;
+    StackPop(Baikal->stk, &a); 
+    StackPop(Baikal->stk, &b);
+    double c = b - a; 
+    StackPush(Baikal->stk, &c);
+    Baikal->ip++;
+    return 0;
+}
+
+int HandleDiv(SPU* Baikal)
+{
+    double a = 0;
+    double b = 0;
+    StackPop(Baikal->stk, &a);
+    StackPop(Baikal->stk, &b); 
+    double c = b / a; 
+    StackPush(Baikal->stk, &c); 
+    Baikal->ip++;
+    return 0;
+}
+
+int HandleMul(SPU* Baikal)
+{
+    double a = 0;
+    double b = 0;
+    StackPop(Baikal->stk, &a);
+    StackPop(Baikal->stk, &b);
+    double c = b * a; 
+    StackPush(Baikal->stk, &c); 
+    Baikal->ip++;
+    return 0;
+}
+
+int HandlePow(SPU* Baikal)
+{
+    double a = 0;
+    double b = 0;
+    StackPop(Baikal->stk, &a);
+    StackPop(Baikal->stk, &b); 
+    for(int i = 0; i < a; i++)
+    {
+        b *= b;
+    }
+    StackPush(Baikal->stk, &b); 
+    Baikal->ip++;
+    return 0;
+}
+
+int HandleSin(SPU* Baikal)
+{
+    Baikal->ip += 1;
+    double a = 0;
+    StackPop(Baikal->stk, &a);
+    a = sin(a);
+    StackPush(Baikal->stk, &a);
+    return 0;
+}
+
+int HandleOut(SPU* Baikal)
+{
+    double a = 0;
+    StackPop(Baikal->stk, &a);
+    printf("%.6lf\n", a);
+    Baikal->ip += 1;
+    return 0;
+}
+
+int HandleJmp(SPU* Baikal)
+{
+    Baikal->ip += 1;
+    uint32_t ip = 0;
+    memcpy(&ip, Baikal->cmdSheet.buf + Baikal->ip, sizeof(ip));
+    Baikal->ip = ip;
+    return 0;
+}
+
+int HandleJmb(SPU* Baikal)
+{
+    Baikal->ip += 1;
+    double a = 0;
+    double b = 0;
+    StackPop(Baikal->stk, &a);
+    StackPop(Baikal->stk, &b);
+    if(doublecmp(b, a, EPS) < 0)
+    {
+        uint32_t ip = 0;
+        memcpy(&ip, Baikal->cmdSheet.buf + Baikal->ip, sizeof(ip));
+        Baikal->ip = ip;
+        return 0;
+    }
+    Baikal->ip += sizeof(uint32_t);
+    return 0;
+}
+
+int HandleJma(SPU* Baikal)
+{
+    Baikal->ip += 1;
+    double a = 0;
+    double b = 0;
+    StackPop(Baikal->stk, &a);
+    StackPop(Baikal->stk, &b);
+    if(doublecmp(b, a, EPS) > 0)
+    {
+        uint32_t ip = 0;
+        memcpy(&ip, Baikal->cmdSheet.buf + Baikal->ip, sizeof(ip));
+        Baikal->ip = ip;
+        return 0;
+    }
+    Baikal->ip += sizeof(uint32_t);
+    return 0;
+}
+
+int HandleJme(SPU* Baikal)
+{
+    Baikal->ip += 1;
+    double a = 0;
+    double b = 0;
+    StackPop(Baikal->stk, &a);
+    StackPop(Baikal->stk, &b);
+    if(doublecmp(b, a, EPS) == 0)
+    {
+        uint32_t ip = 0;
+        memcpy(&ip, Baikal->cmdSheet.buf + Baikal->ip, sizeof(ip));
+        Baikal->ip = ip;
+        return 0;
+    }
+    Baikal->ip += sizeof(uint32_t);
+    return 0;
+}
+
+int HandleJmn(SPU* Baikal)
+{
+    Baikal->ip += 1;
+    double a = 0;
+    double b = 0;
+    StackPop(Baikal->stk, &a);
+    StackPop(Baikal->stk, &b);
+    if(doublecmp(b, a, EPS) != 0)
+    {
+        uint32_t ip = 0;
+        memcpy(&ip, Baikal->cmdSheet.buf + Baikal->ip, sizeof(ip));
+        Baikal->ip = ip;
+        return 0;
+    }
+    Baikal->ip += sizeof(uint32_t);
+    return 0;
+}
+
+int HandleJmbe(SPU* Baikal)
+{
+    Baikal->ip += 1;
+    double a = 0;
+    double b = 0;
+    StackPop(Baikal->stk, &a);
+    StackPop(Baikal->stk, &b);
+    if(doublecmp(b, a, EPS) <= 0)
+    {
+        uint32_t ip = 0;
+        memcpy(&ip, Baikal->cmdSheet.buf + Baikal->ip, sizeof(ip));
+        Baikal->ip = ip;
+        return 0;
+    }
+    Baikal->ip += sizeof(uint32_t);
+    return 0;
+}
+
+int HandleJmae(SPU* Baikal)
+{
+    Baikal->ip += 1;
+    double a = 0;
+    double b = 0;
+    StackPop(Baikal->stk, &a);
+    StackPop(Baikal->stk, &b);
+    if(doublecmp(b, a, EPS) >= 0)
+    {
+        uint32_t ip = 0;
+        memcpy(&ip, Baikal->cmdSheet.buf + Baikal->ip, sizeof(ip));
+        Baikal->ip = ip;
+        return 0;
+    }
+    Baikal->ip += sizeof(uint32_t);
+    return 0;
+}
+
+int HandleSleep(SPU* Baikal)
+{
+    Baikal->ip += 1;
+    uint32_t slpTime = 0;
+    memcpy(&slpTime, Baikal->cmdSheet.buf + Baikal->ip, sizeof(slpTime));
+    usleep(slpTime);
+    Baikal->ip += sizeof(slpTime);
+    return 0;
+}
+
+int HandleDraw(SPU* Baikal)
+{
+    Baikal->ip += 1;
+    fprintf(stdout, "\033[1J");
+    uint32_t width  = 0;
+    uint32_t height = 0;
+
+    memcpy(&width, Baikal->cmdSheet.buf + Baikal->ip, sizeof(width));
+
+    Baikal->ip += sizeof(width);
+    memcpy(&height, Baikal->cmdSheet.buf + Baikal->ip, sizeof(height));
+    Baikal->ip += sizeof(height);
+
+
+    for(uint32_t i = 0; i < height; i++)
+    {
+        for(uint32_t j = 0; j < width; j++)
+        {
+            double out = 0;
+            char pixel = 0;
+            memcpy(&out, Baikal->ram + sizeof(out)*(i*width + j), sizeof(out));                  
+            if(doublecmp(out, 0, EPS) != 0)
+            {
+                pixel = 1;
+            }
+            fprintf(stdout, "%c", ' ' + ('#' - ' ')*pixel);
+        }
+        fprintf(stdout, "\n");
+    }
+    return 0;
+}
+
+int HandleIn(SPU* Baikal)
+{
+    Baikal->ip += 1;
+    double a = 0;
+    if(scanf("%lf", &a) == 0)
+    {
+        return READING_ERROR;
+    }
+    StackPush(Baikal->stk, &a);
+    return 0;
+}
+
+int HandleHlt(SPU* Baikal)
+{
+    return CMD_HLT;
+}
+
+int HandleSqrt(SPU* Baikal)
+{
+    Baikal->ip += 1;
+    double a = 0;
+    StackPop(Baikal->stk, &a);
+    double b = sqrt(a);
+    StackPush(Baikal->stk, &b);
+    return 0;
+}
+
+int HandleUnknown(SPU* Baikal)
+{
+    fprintf(stderr, "Unknown command\n");
+    abort();
+    return -1;
 }

@@ -24,7 +24,7 @@ int main()
     {
         for(uint32_t x = 0; x < Size; x++)
         {
-            if((x - Size/2)*(x - Size/2) + (y - Size/2)*(y - Size/2) <= (Size/2)*(Size/2) + 1)
+            if((x - Size/2)*(x - Size/2) + (y - Size/2)*(y - Size/2) <= (Size/2)*(Size/2))
             {
                 fprintf(output, "push 1\npop [%u]\n", (y*Size + x)*sizeof(double));
             }

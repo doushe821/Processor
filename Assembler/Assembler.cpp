@@ -2,7 +2,7 @@
 
 int main(int argc, char* argv[])
 {
-    Assembly Asm = {};
+    Assembly_t Asm = {};
     Asm.files = CmdOpenFile(argc, argv);  // SOURCE OBJECT OPENED
     
     if((Asm.LTable.labAr = LTCtor(Asm.LTable.labAr, LTLENGTH_MAX)) == NULL) // LT CREATED
@@ -32,37 +32,31 @@ int main(int argc, char* argv[])
     
     fclose(Asm.files.source); // SOURCE CLOSED
     
-    if(assembly(&Asm) != 0)
+    if(Assembly(&Asm) != 0)
     {  
         fprintf(stderr, "First assembling error\n");
         return ASSEMBLER_ERROR;
     }
+
 
     
     ON_DEBUG(fprintf(stderr, "FSDFKLDJKSLKDSJ LNUM: %zu\n", Asm.LTable.lnum));
 
     if(Asm.LTable.lnum > 0)
     {
-        
-        free(Asm.sheet.buf); // HAVE TO CLEAN CODE 
-         
-        
-        //ON_DEBUG(LTDump(&Asm.LTable));
-
-        if(assembly(&Asm) != 0)
+        StackDtor(Asm.cmdStack);
+        VStackInit(&Asm.cmdStack, Asm.SourceSize);
+        if(Assembly(&Asm) != 0)
         {
             fprintf(stderr, "Second assembling error\n");
             return ASSEMBLER_ERROR;
         }
     }
     
-    if(WriteBin(Asm.files.object, Asm.sheet.buf, Asm.sheet.size) != 0)
+    if(WriteBin(Asm.files.object, Asm.cmdStack) != 0)
     {
         return BINARY_WRITING_ERROR;
     }
-    
-
-    //free(Asm.sheet.buf);
 
     LTDtor(Asm.LTable.labAr); 
     
@@ -72,16 +66,13 @@ int main(int argc, char* argv[])
 }
 
 
-int assembly(Assembly* Asm)
+int Assembly(Assembly_t* Asm)
 {
-    
-    int cmdIndex = 0;
     size_t bread = 0;
     char* CheckPtr = NULL;
 
     while(bread < Asm->SourceSize)
     {
-        ON_DEBUG(fprintf(stderr, "## IP (CMD INDEX) = %d\n", cmdIndex));
         ON_DEBUG(LTDump(&Asm->LTable));
 
         char buffer[COMMANDNAME_MAX] = {}; 
@@ -89,7 +80,7 @@ int assembly(Assembly* Asm)
         if(GetCommand(Asm, buffer, &bread) != 0)
         {
             fprintf(stderr, "Can't read next command while assembling\n");
-            fprintf(stderr, "Current ip: %u\nLine: %d\n", cmdIndex, __LINE__);
+            fprintf(stderr, "Current ip: %zu\nLine: %d\n", GetStackSize(Asm->cmdStack), __LINE__);
             return READING_ERROR;
         }
         ON_DEBUG(fprintf(stderr, "%s\n", buffer));
@@ -98,7 +89,7 @@ int assembly(Assembly* Asm)
         if((lmarker  = strchr(buffer, ':')) != NULL)
         {
 
-            ParseLabel(Asm, buffer, cmdIndex, lmarker);
+            ParseLabel(Asm, buffer, GetStackSize(Asm->cmdStack), lmarker);
 
             size_t blen = strlen(buffer);
             for(size_t i = 0; i < blen; i++)
@@ -106,12 +97,10 @@ int assembly(Assembly* Asm)
                 buffer[i] = '\0';
             }
 
-            ON_DEBUG(fprintf(stderr, "6969696996 %s\n", buffer));
-
             if(GetCommand(Asm, buffer, &bread) != 0)
             {
                 fprintf(stderr, "Can't read next command while assembling\n");
-                fprintf(stderr, "Current ip: %u\nLine: %d\n", cmdIndex, __LINE__);
+                fprintf(stderr, "Current ip: %zu\nLine: %d\n", GetStackSize(Asm->cmdStack), __LINE__);
                 return READING_ERROR;
             }
 
@@ -119,124 +108,26 @@ int assembly(Assembly* Asm)
         
         int command = RecogniseCommand(buffer);
 
-        ON_DEBUG(fprintf(stderr, "## Recognized command: [%d]\n", command));
-
-        if(command == CMD_PUSH)
+        if(ParseCommand(Asm, command, buffer, &bread) != 0)
         {
-            Asm->sheet.buf[cmdIndex] = (char)CMD_PUSH; // HAVE TO CAST TO CONTINUE USING ENUm
-            cmdIndex++;
-
-            if(GetCommand(Asm, buffer, &bread) != 0)
-            {
-                fprintf(stderr, "Can't read next command while assembling\n");
-                fprintf(stderr, "Current ip: %u\nLine: %d\n", cmdIndex, __LINE__);
-                return READING_ERROR;
-            }
-
-            ParsePush(Asm, buffer, &cmdIndex);
-        }
-
-        else if(command == CMD_CALL)
-        {
-            Asm->sheet.buf[cmdIndex] = (char)CMD_CALL;
-            cmdIndex++;
-
-            if(GetCommand(Asm, buffer, &bread) != 0)
-            {
-                fprintf(stderr, "Can't read next command while assembling\n");
-                fprintf(stderr, "Current ip: %u\nLine: %d\n", cmdIndex, __LINE__);
-                return READING_ERROR;
-            }
-
-            ParseCall(Asm, buffer, &cmdIndex);
-        }
-
-        else if(command == CMD_DRAW)
-        {
-            Asm->sheet.buf[cmdIndex] = (char)CMD_DRAW;
-            cmdIndex++;
-
-            if(GetCommand(Asm, buffer, &bread) != 0)
-            {
-                fprintf(stderr, "Can't read next command while assembling\n");
-                fprintf(stderr, "Current ip: %u\nLine: %d\n", cmdIndex, __LINE__);
-                return READING_ERROR;
-            }
-
-            ParseDraw(Asm, buffer, &cmdIndex);
-        }
-
-        else if(command == CMD_SLEEP)
-        {
-            Asm->sheet.buf[cmdIndex] = (char)CMD_DRAW;
-            cmdIndex++;
-
-            if(GetCommand(Asm, buffer, &bread) != 0)
-            {
-                fprintf(stderr, "Can't read next command while assembling\n");
-                fprintf(stderr, "Current ip: %u\nLine: %d\n", cmdIndex, __LINE__);
-                return READING_ERROR;
-            }
-
-            ParseSleep(Asm, buffer, &cmdIndex);
-        }
-
-        else if(command == CMD_POP)
-        {
-            Asm->sheet.buf[cmdIndex] = (char)CMD_POP;
-            cmdIndex++;
-
-            if(GetCommand(Asm, buffer, &bread) != 0)
-            {
-                fprintf(stderr, "Can't read next command while assembling\n");
-                fprintf(stderr, "Current ip: %u\nLine: %d\n", cmdIndex, __LINE__);
-                return READING_ERROR;
-            }
-    
-            ParsePop(Asm, buffer, &cmdIndex);
-        }
-
-        else if(command == CMD_JMP || command == CMD_JMB || command ==  CMD_JMA || command == CMD_JME || 
-                command == CMD_JMN || command == CMD_JMBE || command == CMD_JMAE) // inequality
-        {
-            Asm->sheet.buf[cmdIndex] = command;
-            cmdIndex++;
-
-            if(GetCommand(Asm, buffer, &bread) != 0)
-            {
-                fprintf(stderr, "Can't read next command while assembling\n");
-                fprintf(stderr, "Current ip: %u\nLine: %d\n", cmdIndex, __LINE__);
-                return READING_ERROR;
-            }
-
-            ParseJump(Asm, buffer, &cmdIndex);
-            
-        }
-        else if(command != 0)
-        {
-            Asm->sheet.buf[cmdIndex] = command;
-            cmdIndex++;
-        }
-        else
-        {
-           continue;
+            return HANDLER_ERROR;
         }
     }
-
-    Asm->sheet.size = cmdIndex;
     return 0;
 
 }
 
-int WriteBin(FILE* obj, char* cmd, uint32_t size)
+int WriteBin(FILE* obj, Stack_t* cmdStack)
 {
+    uint32_t size = GetStackSize(cmdStack);
     uint32_t headtofile[SIZE_OF_HEADER] = {H_SIGN, H_VERSION, size, 0};
     if(fwrite(headtofile, sizeof(int), SIZE_OF_HEADER, obj) != SIZE_OF_HEADER)
     {
         fprintf(stderr, "Unable to write header: %s:%d\n", __FILE__, __LINE__);
         return BINARY_WRITING_ERROR;
     }
-    if(fwrite(cmd, sizeof(char), size, obj) != size)
+    char* bufptr = (char*)GetDataPointer(cmdStack);
+    if(fwrite(bufptr, sizeof(char), size, obj) != size)
     {
         fprintf(stderr, "Unable to write binary file: %s:%d\n", __FILE__, __LINE__);
         return BINARY_WRITING_ERROR;
@@ -244,7 +135,7 @@ int WriteBin(FILE* obj, char* cmd, uint32_t size)
     return 0;
 }
 
-int GetCommand(Assembly* Asm, char* buffer, size_t* bread)
+int GetCommand(Assembly_t* Asm, char* buffer, size_t* bread)
 {
     char* commandptr = NULL;
 
@@ -276,18 +167,45 @@ uint32_t FindReg(char* buf)
     return -1;
 }
 
-int RecogniseCommand(const char* buffer)
+int RecogniseCommand(char* buffer)
 {
     ON_DEBUG(fprintf(stderr, "## CMD BUFFER : %s\n", buffer));
     for(int i = 0; i < NUMBER_OF_COMMANDS; i++)
     {
-        if(strncmp(buffer, CommandNames[i], COMMANDNAME_MAX) == 0)
+        if(strncmp(buffer, CommandsStruct[i].Name, COMMANDNAME_MAX) == 0)
         {
             return i;
         }
     }
-    return -1;
+    return SYNTAX_ERROR;
 }
+
+int ParseCommand(Assembly_t* Asm, int code, char* buffer, size_t* bread)
+{
+    for(size_t i = 0; i < NUMBER_OF_COMMANDS; i++)
+    {
+        if(code == CommandsStruct[i].OpCode)
+        {
+            if(CommandsStruct[i].HasArg)
+            {
+                if(GetCommand(Asm, buffer, bread) != 0)
+                {
+                    fprintf(stderr, "Can't read next command while assembling\n");
+                    fprintf(stderr, "Current ip: %zu\nLine: %d\n", GetStackSize(Asm->cmdStack), __LINE__);
+                    return READING_ERROR;
+                }
+                VStackPush(Asm->cmdStack, &i, 1);
+                CommandsStruct[i].ParseFunc(Asm, buffer);
+            }
+            else
+            {
+                VStackPush(Asm->cmdStack, &i, 1);
+            }
+        }
+    }
+    return 0;
+}
+
 
 struct Files CmdOpenFile(const int argc, char** argv) // argc argv
 {
@@ -352,7 +270,7 @@ struct Files CmdOpenFile(const int argc, char** argv) // argc argv
     return fl;
 }
 
-int Bufferize(Assembly* Asm)
+int Bufferize(Assembly_t* Asm)
 {
     Asm->SourceSize = GetFileSize(Asm->files.source); // default option doesn't work FIX ME
     
@@ -379,12 +297,10 @@ int Bufferize(Assembly* Asm)
         }
     }
 
-    Asm->sheet.buf = (char*)calloc(Asm->SourceSize, sizeof(char)); // dynamic (WORK IN PROGRESS)
-
-    if(Asm->sheet.buf == NULL)
+    if(VStackInit(&Asm->cmdStack, Asm->SourceSize/2) != 0)
     {
-        fprintf(stderr, "Memory allocation error: %s:%d\n", __FILE__, __LINE__);
-        return CALLOC_ERROR;
+        fprintf(stderr, "CMD Stack initialisation error\n");
+        return STACK_CREATION_ERROR;
     }
 
     return 0;

@@ -46,6 +46,7 @@ int StackError(Stack_t* stk)
         errFlag += STACK_UNDERFLOW;
     }
     
+    #ifndef NDEBUG
     if(*(int*)((char*)stk->data) != DataCanaryGuardBotREF)
     {
         fprintf(stderr, "Data bot canary edad\n");
@@ -77,6 +78,7 @@ int StackError(Stack_t* stk)
         errFlag += DATA_CORRUPTED;
     }
 
+    #endif
     /*if(stk->StructHash != hash(stk, sizeof(Stack_t)))
     {
         fprintf(stderr, "Struct hash edad\n");

@@ -14,6 +14,8 @@
 
 #ifndef NDEBUG
 #define ON_DEBUG(code) code
+#else
+#define ON_DEBUG(code)
 #endif //NDEBUG
 
 enum errc
@@ -57,8 +59,11 @@ int StackDtor(Stack_t* stk);
 int StackResize(Stack_t* stk, bool downSizeFlag);
 void* wrecalloc(void* ptr, size_t num, size_t size, size_t PrevSize);
 
-int VStackPush(Stack_t* stk, void* elem, size_t size);
+int VStackPush(Stack_t* stk, const void* elem, size_t size);
 int VStackInit(Stack_t** stk, size_t InitCapacity);
+int StackLook(Stack_t* stk, size_t size);
+size_t GetStackSize(Stack_t* stk);
+void* GetDataPointer(Stack_t* stk);
 
 int ErrParse(Stack_t* stk);
 

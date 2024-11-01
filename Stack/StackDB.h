@@ -3,7 +3,6 @@
 #define STACK_DB
 
 #include "Stack.h"
-
 #ifdef NDEBUG
 #define ON_DEBUG(code) 
 #else

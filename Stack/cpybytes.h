@@ -5,6 +5,6 @@
 #include <inttypes.h>
 #include <string.h>
 
-void cpybytes(void* dest, void* source, size_t size);
+void cpybytes(void* dest, const void* source, size_t size);
 
 #endif

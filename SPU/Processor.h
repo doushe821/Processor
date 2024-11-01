@@ -1,5 +1,5 @@
-#ifndef SPU_INLUDED
-#define SPU_INCLUDED
+#ifndef SPU_H_INLUDED
+#define SPU_H_INCLUDED
 
 #include <stdio.h>
 #include <string.h>
@@ -8,13 +8,13 @@
 #include <unistd.h>
 #include <inttypes.h>
 
+#include "CommandHandler.h"
 #include "../Stack/Stack.h"
 #include "../FileManager.h"
-#include "../Commands.h"
 #include "../doublecmp.h"
+#include "../Commands.h"
 
 #include "../BigMoney.h"
-
 
 
 
@@ -39,29 +39,6 @@ enum ErrCodes
     HEADERINIT_ERROR,
 };
 
-
-
-struct Buffer
-{
-    char*  buf;
-    int    err;
-    size_t size;
-};
-
-struct SPU
-{
-    Buffer   cmdSheet;
-    size_t   ip;
-
-    Stack_t* stk;
-    Stack_t* CallStk;
-
-    double   Reg[10];
-    char     ram[131072];
-    
-};
-
-
 struct Files
 {
     FILE* obj;
@@ -73,6 +50,8 @@ struct Buffer Bufferise(FILE* obj, const Header head);
 int Process(Buffer Sheet);
 int doCommand(SPU* spu);
 int HeaderInit(Header* head, FILE* obj);
+
+
 
 
 #endif

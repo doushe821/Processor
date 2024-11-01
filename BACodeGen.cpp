@@ -12,7 +12,7 @@ int main()
         return -1;
     }
 
-    FILE* output = fopen("CodeGenBA", "w+b");
+    FILE* output = fopen("BadApple.wsm", "w+b");
 
     size_t size = GetFileSize(fp);
 
@@ -34,7 +34,7 @@ int main()
                 {
                     continue;
                 }
-                fprintf(output, "push 0\npop [%d]\n", i);
+                fprintf(output, "push 0\npop [%d]\n", i*8);
                 subbuffer[i] = 0;
             }
             else
@@ -43,12 +43,12 @@ int main()
                 {
                     continue;
                 }
-                fprintf(output, "push 1\npop [%d]\n", i); 
+                fprintf(output, "push 1\npop [%d]\n", i*8); 
                 subbuffer[i] = 1;
             }
         }
         fprintf(output, "draw 96x64\n");
-        fprintf(output, "sleep 10000\n");
+        fprintf(output, "sleep 100000\n");
     }
     fprintf(output, "hlt\n");
     fclose(output);

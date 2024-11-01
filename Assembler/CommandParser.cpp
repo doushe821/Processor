@@ -1,6 +1,6 @@
 #include "Assembler.h"
 
-int ParsePop(Assembly* Asm, char* buffer, int* cmdIndex)
+int ParsePop(Assembly_t* Asm, char* buffer)
 {
     char* cptr = NULL;
     char* eptr = NULL;
@@ -9,12 +9,16 @@ int ParsePop(Assembly* Asm, char* buffer, int* cmdIndex)
     char argBuffer[ARGLEN_MAX] = {};
     uint32_t rg = 0;
 
+    uint8_t tempByte = 0;
+    double tempVal = 0;
+
     if((cptr = strchr(buffer, '[')) != NULL)
     {
         if((plusptr = strchr(buffer, '+')) != NULL)
         {
-            Asm->sheet.buf[*cmdIndex] = RAM_REG_CONSTVAL;
-            (*cmdIndex)++;
+            tempByte = RAM_REG_CONSTVAL;
+            VStackPush(Asm->cmdStack, &tempByte, sizeof(tempByte));
+            
 
             ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", RAM_REG_CONSTVAL));
 
@@ -24,8 +28,7 @@ int ParsePop(Assembly* Asm, char* buffer, int* cmdIndex)
                 return SYNTAX_ERROR;
             }
 
-            memcpy(Asm->sheet.buf + *cmdIndex, &rg, sizeof(rg));
-            (*cmdIndex) += sizeof(rg);
+            VStackPush(Asm->cmdStack, &rg, sizeof(rg));
             
             if((eptr = strchr(buffer, ']')) == NULL)
             {
@@ -35,31 +38,33 @@ int ParsePop(Assembly* Asm, char* buffer, int* cmdIndex)
 
 
             uint32_t ramNum = atoi(buffer + (eptr - plusptr + 1));
-            memcpy(Asm->sheet.buf + *cmdIndex, &ramNum, sizeof(ramNum));
-            (*cmdIndex) += sizeof(ramNum);
+            VStackPush(Asm->cmdStack, &ramNum, sizeof(ramNum));
+            
         }
 
         else if((rg = FindReg(buffer + 1)) != -1) // buffer + (cptr - buffer)
         {
-            Asm->sheet.buf[*cmdIndex] = RAM_REG;
-            (*cmdIndex)++;
+            tempByte = RAM_REG;
+            VStackPush(Asm->cmdStack, &tempByte, sizeof(tempByte));
+            
 
             ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", RAM_REG));    
 
-            memcpy(Asm->sheet.buf + *cmdIndex, &rg, sizeof(rg));
-            (*cmdIndex) += sizeof(rg);
+            VStackPush(Asm->cmdStack, &rg, sizeof(rg));
+            
         }
 
         else 
         {
-            Asm->sheet.buf[*cmdIndex] = RAM_CONSTVAL;
-            (*cmdIndex)++;
+            tempByte = RAM_CONSTVAL;
+            VStackPush(Asm->cmdStack, &tempByte, sizeof(tempByte));
+            
 
             ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", RAM_CONSTVAL));
             
             uint32_t ramNum = atoi(buffer + 1);
-            memcpy(Asm->sheet.buf + *cmdIndex, &ramNum, sizeof(ramNum));
-            (*cmdIndex) += sizeof(ramNum);
+            VStackPush(Asm->cmdStack, &ramNum, sizeof(ramNum));
+            
         }
     }
 
@@ -70,17 +75,20 @@ int ParsePop(Assembly* Asm, char* buffer, int* cmdIndex)
             return SYNTAX_ERROR;
         }
 
-        Asm->sheet.buf[*cmdIndex] = REG;
-        (*cmdIndex)++;
-        memcpy(Asm->sheet.buf + *cmdIndex, &rg, sizeof(rg));
-        (*cmdIndex) += sizeof(rg);
+        tempByte = REG;
+        VStackPush(Asm->cmdStack, &tempByte, sizeof(tempByte));
+        
+        VStackPush(Asm->cmdStack, &rg, sizeof(rg));
+        
     }
 
     return 0;
 }
 
-int ParsePush(Assembly* Asm, char* buffer, int* cmdIndex)
+int ParsePush(Assembly_t* Asm, char* buffer)
 {
+    uint8_t tempByte = 0;
+    double tempVal = 0;
 
     char* cptr = NULL;
     char* eptr = NULL;
@@ -93,8 +101,9 @@ int ParsePush(Assembly* Asm, char* buffer, int* cmdIndex)
     {
         if((plusptr = strchr(buffer, '+')) != NULL)
         {
-            Asm->sheet.buf[*cmdIndex] = RAM_REG_CONSTVAL;
-            (*cmdIndex)++;
+            tempByte = RAM_REG_CONSTVAL;
+            VStackPush(Asm->cmdStack, &tempByte, sizeof(tempByte));
+            
             
             ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", RAM_REG_CONSTVAL));
 
@@ -104,9 +113,7 @@ int ParsePush(Assembly* Asm, char* buffer, int* cmdIndex)
                 return SYNTAX_ERROR;
             }
 
-
-            memcpy(Asm->sheet.buf + *cmdIndex, &rg, sizeof(uint32_t));
-            (*cmdIndex) += sizeof(uint32_t);
+            VStackPush(Asm->cmdStack, &rg, sizeof(rg));
             
             if((eptr = strchr(buffer, ']')) == NULL)
             {
@@ -116,89 +123,67 @@ int ParsePush(Assembly* Asm, char* buffer, int* cmdIndex)
 
 
             uint32_t ramNum = atoi(buffer + (eptr - plusptr + 1));
-            memcpy(Asm->sheet.buf + *cmdIndex, &ramNum, sizeof(uint32_t));
-            (*cmdIndex) += sizeof(ramNum);
+            VStackPush(Asm->cmdStack, &ramNum, sizeof(ramNum));
+            
         }
 
         else if((rg = FindReg(buffer + 1)) != -1) // buffer + (cptr - buffer)
         {
-            Asm->sheet.buf[*cmdIndex] = RAM_REG;
-            (*cmdIndex)++;
+            tempByte = RAM_REG;
+            VStackPush(Asm->cmdStack, &tempByte, sizeof(tempByte));
+            
 
             ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", RAM_REG));    
 
-            memcpy(Asm->sheet.buf + *cmdIndex, &rg, sizeof(rg));
-            (*cmdIndex) += sizeof(rg);
+            VStackPush(Asm->cmdStack, &rg, sizeof(rg));
+            
         }
         else 
         {
-            Asm->sheet.buf[*cmdIndex] = RAM_CONSTVAL;
-            (*cmdIndex)++;
+            tempByte = RAM_CONSTVAL;
+            VStackPush(Asm->cmdStack, &tempByte, sizeof(tempByte));
+            
 
             ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", RAM_CONSTVAL));
             
             uint32_t ramCNum = atoi(buffer + 1);
 
-            memcpy(Asm->sheet.buf + *cmdIndex, &ramCNum, sizeof(ramCNum));
-            (*cmdIndex) += sizeof(ramCNum);
+            VStackPush(Asm->cmdStack, &ramCNum, sizeof(ramCNum));
+            
         }
-    }
-    else if((plusptr = strchr(buffer, '+')) != NULL)
-    {
-        Asm->sheet.buf[*cmdIndex] = REG_CONSTVAL;
-        (*cmdIndex)++;
-
-        ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", REG_CONSTVAL));
-
-        if((rg = FindReg(buffer)) == -1)
-        {
-            fprintf(stderr, "SYNTAX ERROR\n");
-            return SYNTAX_ERROR;
-        }
-
-        memcpy(Asm->sheet.buf + *cmdIndex, &rg, sizeof(rg));
-        (*cmdIndex) += sizeof(rg);
-
-
-        uint32_t ramNum = atoi(buffer + (plusptr - buffer) + 1);
-        memcpy(Asm->sheet.buf + *cmdIndex, &ramNum, sizeof(ramNum));
-        (*cmdIndex) += sizeof(ramNum); 
-
     }
     else if((rg = FindReg(buffer)) != -1)
     {
-        Asm->sheet.buf[*cmdIndex] = REG;
-        (*cmdIndex)++;
+        tempByte = REG;
+        VStackPush(Asm->cmdStack, &tempByte, sizeof(tempByte));
+        
 
         ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", REG));
 
-        memcpy(Asm->sheet.buf + *cmdIndex, &rg, sizeof(rg));
-        (*cmdIndex) += sizeof(rg);
+        VStackPush(Asm->cmdStack, &rg, sizeof(rg));
     }
     else
     {
-        Asm->sheet.buf[*cmdIndex] = CONSTVAL;
-        (*cmdIndex)++;
+        tempByte = CONSTVAL;
+        VStackPush(Asm->cmdStack, &tempByte, sizeof(tempByte));
         double cVal = atof(buffer);
-        memcpy(Asm->sheet.buf + *cmdIndex, &cVal, sizeof(cVal));
-        (*cmdIndex) += sizeof(cVal);
+        VStackPush(Asm->cmdStack, &cVal, sizeof(cVal));
         
         ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", CONSTVAL));
     }
     return 0;
 }
 
-int ParseSleep(Assembly* Asm, char* buffer, int* cmdIndex)
+int ParseSleep(Assembly_t* Asm, char* buffer)
 {
 
     uint32_t time = atoi(buffer);
-    memcpy(Asm->sheet.buf + *cmdIndex, &time, sizeof(time));
-    (*cmdIndex) += sizeof(time);
+    VStackPush(Asm->cmdStack, &time, sizeof(time));
 
     return 0;
 }
 
-int ParseDraw(Assembly* Asm, char* buffer, int* cmdIndex)
+int ParseDraw(Assembly_t* Asm, char* buffer)
 {
     char* divisor = strchr(buffer, 'x');   
     if(divisor == NULL)
@@ -207,26 +192,22 @@ int ParseDraw(Assembly* Asm, char* buffer, int* cmdIndex)
     }     
 
     uint32_t width  = atoi(buffer);
-    memcpy(Asm->sheet.buf + *cmdIndex, &width, sizeof(width));
-    (*cmdIndex) += sizeof(width);
+    VStackPush(Asm->cmdStack, &width, sizeof(width));
 
     uint32_t height = atoi(divisor + 1);
-    memcpy(Asm->sheet.buf + *cmdIndex, &height, sizeof(height));
-    (*cmdIndex) += sizeof(height);
+    VStackPush(Asm->cmdStack, &height, sizeof(height));
     
     return 0;
 }
 
-int ParseJump(Assembly* Asm, char* buffer, int* cmdIndex)
+int ParseJump(Assembly_t* Asm, char* buffer)
 {
     ON_DEBUG(fprintf(stderr, "## JMP ARG: %s\n", buffer));
             
     if(isdigit(buffer[0]))
     {
-
         uint32_t jumpIP =  atoi(buffer);
-        memcpy(Asm->sheet.buf + *cmdIndex, &jumpIP, sizeof(jumpIP));
-        *cmdIndex += sizeof(jumpIP);
+        VStackPush(Asm->cmdStack, &jumpIP, sizeof(jumpIP));
         
         ON_DEBUG(fprintf(stderr, "## JMP ARG ADDED: %d\n", atoi(buffer)));              
         return 0;
@@ -237,13 +218,13 @@ int ParseJump(Assembly* Asm, char* buffer, int* cmdIndex)
     {
         uint32_t labVal = 0;
                 
-        if((labVal = FindLabel(&Asm->LTable, buffer)) == -1) // LABEL IS NOT IN THE TABLE YET
+        if((labVal = FindLabel(&Asm->LTable, buffer)) == -1)                           // LABEL IS NOT IN THE TABLE YET
         {
             strncpy(Asm->LTable.labAr[Asm->LTable.lnum].name, buffer, COMMANDNAME_MAX);
-            *cmdIndex += sizeof(Asm->LTable.labAr[Asm->LTable.lnum].ipTarg);
             Asm->LTable.lnum++;
             ON_DEBUG(fprintf(stderr, "## LABEL NAME ADDED: %s\n", buffer));
             ON_DEBUG(LTDump(&Asm->LTable));
+            VStackPush(Asm->cmdStack, &labVal, 4);
             return 0;
         }
 
@@ -253,14 +234,19 @@ int ParseJump(Assembly* Asm, char* buffer, int* cmdIndex)
             ON_DEBUG(fprintf(stderr, "$$$ %lu\n", sizeof(Asm->LTable.labAr[labVal].ipTarg)));
             ON_DEBUG(fprintf(stderr, "$$$ IP TARGET = %u\n", Asm->LTable.labAr[labVal].ipTarg));
             
-            memcpy(Asm->sheet.buf + *cmdIndex, &Asm->LTable.labAr[labVal].ipTarg, sizeof(Asm->LTable.labAr[labVal].ipTarg));
-            (*cmdIndex) += sizeof(Asm->LTable.labAr[labVal].ipTarg);
+            VStackPush(Asm->cmdStack, &Asm->LTable.labAr[labVal].ipTarg, sizeof(Asm->LTable.labAr[labVal].ipTarg));
+            
             return 0;
         }
     }
 }
 
-int ParseCall(Assembly* Asm, char* buffer, int* cmdIndex)
+int ParseNoArg(Assembly_t* Asm, char* buffer)
+{
+    return 0;
+}
+
+int ParseCall(Assembly_t* Asm, char* buffer)
 {
     ON_DEBUG(fprintf(stderr, "## CALL ARG: %s\n", buffer));
             
@@ -269,10 +255,10 @@ int ParseCall(Assembly* Asm, char* buffer, int* cmdIndex)
     if((labVal = FindLabel(&Asm->LTable, buffer)) == -1) // LABEL IS NOT IN THE TABLE YET
     {
         strncpy(Asm->LTable.labAr[Asm->LTable.lnum].name, buffer, COMMANDNAME_MAX);
-        *cmdIndex += sizeof(Asm->LTable.labAr[Asm->LTable.lnum].ipTarg);
         Asm->LTable.lnum++;
         ON_DEBUG(fprintf(stderr, "## LABEL NAME ADDED: %s\n", buffer));
         ON_DEBUG(LTDump(&Asm->LTable));
+        VStackPush(Asm->cmdStack, &labVal, sizeof(labVal));
         return 0;
     }
 
@@ -282,14 +268,20 @@ int ParseCall(Assembly* Asm, char* buffer, int* cmdIndex)
         ON_DEBUG(fprintf(stderr, "$$$ %lu\n", sizeof(Asm->LTable.labAr[labVal].ipTarg)));
         ON_DEBUG(fprintf(stderr, "$$$ IP TARGET = %u\n", Asm->LTable.labAr[labVal].ipTarg));
         
-        memcpy(Asm->sheet.buf + *cmdIndex, &Asm->LTable.labAr[labVal].ipTarg, sizeof(Asm->LTable.labAr[labVal].ipTarg));
-        (*cmdIndex) += sizeof(Asm->LTable.labAr[labVal].ipTarg);
+        VStackPush(Asm->cmdStack, &Asm->LTable.labAr[labVal].ipTarg, sizeof(Asm->LTable.labAr[labVal].ipTarg));
+        
         return 0;
     }
     
 }
 
-int ParseLabel(Assembly* Asm, char* buffer, size_t cmdIndex, char* lmarker)
+int ParseUnknown(Assembly_t* Asm, char* buffer)
+{
+    fprintf(stderr, "Unknown command\n");
+    return SYNTAX_ERROR;
+}
+
+int ParseLabel(Assembly_t* Asm, char* buffer, size_t cmdIndex, char* lmarker)
 {
         int labVal = 0;
         *lmarker = '\0';

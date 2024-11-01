@@ -1,0 +1,15 @@
+CC=g++
+
+CFLAGS= -Og -g3 -ggdb -D_FORIFY_SOURCES=3 -Wshadow -Winit-self -Wredundant-decls -Wcast-align -Wundef -Wfloat-equal -Winline -Wunreachable-code -Wmissing-declarations -Wmissing-include-dirs -Wswitch-enum -Wsign-promo -Wstack-usage=8192 -Wstrict-aliasing -Wstrict-null-sentinel -Wtype-limits -Wwrite-strings -Werror=vla -D_EJUDGE_CLIENT_SIDE
+SOURCES=CircleCodeGen.cpp FileManager.cpp
+OBJECTS=$(SRCASM:.cpp=.o)
+EXE=CGCircle
+
+all: $(SOURCES) $(EXE)
+$(EXE): $(OBJECTS)
+	$(CC) $(LDFLAGS) $(CFLAGS) $(OBJECTS) -o $@
+%.o : %.cpp
+	$(CC) -c $(CFLAGS) $< -o $@
+
+clean:
+	rm -rf *.o 
