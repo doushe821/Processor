@@ -3,11 +3,9 @@
 int main(int argc, char* argv[])
 {
     Assembly_t Asm = {};
-    Asm.files = CmdOpenFile(argc, argv);  // SOURCE OBJECT OPENED
-    
-    if((Asm.LTable.labAr = LTCtor(Asm.LTable.labAr, LTLENGTH_MAX)) == NULL) // LT CREATED
+
+    if((Asm.LTable.labAr = LTCtor(Asm.LTable.labAr, LTLENGTH_MAX)) == NULL)
     {
-        
         return LTABLE_CREATION_ERROR;
     }
     
@@ -16,60 +14,88 @@ int main(int argc, char* argv[])
         return STACK_CREATION_ERROR;
     }
     
-
-    if(Asm.files.err)
+    Asm.files = CmdOpenFile(argc, argv); 
+    if(Asm.files.err == FOPEN_ERROR)
     {
-        fprintf(stderr, "Can't open source or create object file.\n");
+        StackDtor(Asm.LStack);
+        LTDtor(Asm.LTable.labAr); 
+        fprintf(stderr, "Can't open source or create object file. %s:%d\n", __FILE__, __LINE__);
         return FOPEN_ERROR;
     }
     
     if(Bufferize(&Asm) != 0)
     {
         fprintf(stderr, "Failed to bufferise commands file\n");
+        StackDtor(Asm.LStack);
+        LTDtor(Asm.LTable.labAr); 
+        fclose(Asm.files.object); 
         return READING_ERROR;
     }
 
-    
     fclose(Asm.files.source); // SOURCE CLOSED
     
     if(Assembly(&Asm) != 0)
     {  
+        free(Asm.Source);
+        StackDtor(Asm.LStack);
+        StackDtor(Asm.cmdStack);
+        LTDtor(Asm.LTable.labAr); 
+        fclose(Asm.files.object); 
         fprintf(stderr, "First assembling error\n");
         return ASSEMBLER_ERROR;
     }
 
-
-    
     ON_DEBUG(fprintf(stderr, "FSDFKLDJKSLKDSJ LNUM: %zu\n", Asm.LTable.lnum));
 
     if(Asm.LTable.lnum > 0)
     {
-        StackDtor(Asm.cmdStack);
-        VStackInit(&Asm.cmdStack, Asm.SourceSize);
         if(Assembly(&Asm) != 0)
         {
+            free(Asm.Source);
+            StackDtor(Asm.cmdStack);
+            LTDtor(Asm.LTable.labAr); 
+            fclose(Asm.files.object); 
             fprintf(stderr, "Second assembling error\n");
             return ASSEMBLER_ERROR;
         }
     }
-    
-    if(WriteBin(Asm.files.object, Asm.cmdStack) != 0)
+
+    for(size_t i = 0; i < Asm.LTable.lnum; i++)
     {
-        return BINARY_WRITING_ERROR;
+        if(Asm.LTable.labAr[i].ipTarg == SIZE_MAX - 1)
+        {
+            free(Asm.Source);
+            StackDtor(Asm.cmdStack);
+            StackDtor(Asm.LStack);
+            LTDtor(Asm.LTable.labAr); 
+            fclose(Asm.files.object); 
+            fprintf(stderr, "Some labels remain undefined, there is probably an error in given source code.\n");
+            return CORRUPTED_LABELS;
+        }
     }
 
+    if(WriteBin(Asm.files.object, Asm.cmdStack) != 0)
+    {
+        free(Asm.Source);
+        StackDtor(Asm.cmdStack);
+        StackDtor(Asm.LStack);
+        LTDtor(Asm.LTable.labAr); 
+        fclose(Asm.files.object); 
+        fprintf(stderr, ".bin writing error\n");
+        return BINARY_WRITING_ERROR;
+    }
+    free(Asm.Source);
+    StackDtor(Asm.cmdStack);
+    StackDtor(Asm.LStack);
     LTDtor(Asm.LTable.labAr); 
-    
     fclose(Asm.files.object); 
     
     return 0;
 }
 
-
 int Assembly(Assembly_t* Asm)
 {
     size_t bread = 0;
-    char* CheckPtr = NULL;
 
     while(bread < Asm->SourceSize)
     {
@@ -84,6 +110,7 @@ int Assembly(Assembly_t* Asm)
             return READING_ERROR;
         }
         ON_DEBUG(fprintf(stderr, "%s\n", buffer));
+        ON_DEBUG(fprintf(stderr, "%zu\n", GetStackSize(Asm->cmdStack)));
 
         char* lmarker = NULL;
         if((lmarker  = strchr(buffer, ':')) != NULL)
@@ -154,23 +181,10 @@ int GetCommand(Assembly_t* Asm, char* buffer, size_t* bread)
     return 0;
 }
 
-uint32_t FindReg(char* buf)
-{
-    //ON_DEBUG(fprintf(stderr, "  ARG BUF: %s\n", buf));
-    for(int i = 0; i < NUMBER_OF_REGS; i++)
-    {
-        if(strncmp(buf, REG_NAMES[i], REGNAME_MAX) == 0)
-        {
-            return i;
-        }
-    }
-    return -1;
-}
-
 int RecogniseCommand(char* buffer)
 {
     ON_DEBUG(fprintf(stderr, "## CMD BUFFER : %s\n", buffer));
-    for(int i = 0; i < NUMBER_OF_COMMANDS; i++)
+    for(size_t i = 0; i < NUMBER_OF_COMMANDS; i++)
     {
         if(strncmp(buffer, CommandsStruct[i].Name, COMMANDNAME_MAX) == 0)
         {
@@ -205,7 +219,6 @@ int ParseCommand(Assembly_t* Asm, int code, char* buffer, size_t* bread)
     }
     return 0;
 }
-
 
 struct Files CmdOpenFile(const int argc, char** argv) // argc argv
 {
@@ -282,6 +295,7 @@ int Bufferize(Assembly_t* Asm)
     
     if(fread(Asm->Source, sizeof(char), Asm->SourceSize, Asm->files.source) != Asm->SourceSize) 
     {
+        free(Asm->Source);
         fprintf(stderr, "Reading error: %s:%d\n", __FILE__, __LINE__);
         return READING_ERROR;
     }

@@ -26,7 +26,7 @@ label* LTCtor(label* LT, size_t size);
 int LTDtor(label* LT);
 int LTDumpf(LabelTable* LT);
 int LTDump(LabelTable* LT);
-int FindLabel(LabelTable* lt, char* buffer);
+size_t FindLabel(LabelTable* LT, char* buffer);
 
 
 #endif

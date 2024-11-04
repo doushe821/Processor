@@ -22,7 +22,7 @@ int ParsePop(Assembly_t* Asm, char* buffer)
 
             ON_DEBUG(fprintf(stderr, "## ARGTYPE = %d\n", RAM_REG_CONSTVAL));
 
-            if((rg = FindReg(buffer + 1)) == -1) // buffer + (cptr - buffer)
+            if((rg = FindReg(buffer + 1)) == UINT32_MAX - 1) // buffer + (cptr - buffer)
             {
                 fprintf(stderr, "SYNTAX ERROR\n");
                 return SYNTAX_ERROR;
@@ -42,7 +42,7 @@ int ParsePop(Assembly_t* Asm, char* buffer)
             
         }
 
-        else if((rg = FindReg(buffer + 1)) != -1) // buffer + (cptr - buffer)
+        else if((rg = FindReg(buffer + 1)) != UINT32_MAX - 1) // buffer + (cptr - buffer)
         {
             tempByte = RAM_REG;
             VStackPush(Asm->cmdStack, &tempByte, sizeof(tempByte));
@@ -70,7 +70,7 @@ int ParsePop(Assembly_t* Asm, char* buffer)
 
     else
     {
-        if((rg = FindReg(buffer)) == -1)
+        if((rg = FindReg(buffer)) == UINT32_MAX - 1)
         {
             return SYNTAX_ERROR;
         }
@@ -127,7 +127,7 @@ int ParsePush(Assembly_t* Asm, char* buffer)
             
         }
 
-        else if((rg = FindReg(buffer + 1)) != -1) // buffer + (cptr - buffer)
+        else if((rg = FindReg(buffer + 1)) != UINT32_MAX - 1) // buffer + (cptr - buffer)
         {
             tempByte = RAM_REG;
             VStackPush(Asm->cmdStack, &tempByte, sizeof(tempByte));
@@ -152,7 +152,7 @@ int ParsePush(Assembly_t* Asm, char* buffer)
             
         }
     }
-    else if((rg = FindReg(buffer)) != -1)
+    else if((rg = FindReg(buffer)) != UINT32_MAX - 1)
     {
         tempByte = REG;
         VStackPush(Asm->cmdStack, &tempByte, sizeof(tempByte));
@@ -312,4 +312,17 @@ int ParseLabel(Assembly_t* Asm, char* buffer, size_t cmdIndex, char* lmarker)
         }
         
         return 0;
+}
+
+uint32_t FindReg(char* buf)
+{
+    //ON_DEBUG(fprintf(stderr, "  ARG BUF: %s\n", buf));
+    for(int i = 0; i < NUMBER_OF_REGS; i++)
+    {
+        if(strncmp(buf, REG_NAMES[i], REGNAME_MAX) == 0)
+        {
+            return i;
+        }
+    }
+    return UINT32_MAX - 1;
 }

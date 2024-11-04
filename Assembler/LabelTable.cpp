@@ -11,7 +11,7 @@ label* LTCtor(label* LT, size_t size)
 
     for(size_t i = 0; i < size; i++)
     {
-        LT[i].ipTarg = -1;
+        LT[i].ipTarg = SIZE_MAX - 1;
     }
     return LT;
 }
@@ -31,11 +31,11 @@ int LTDumpf(LabelTable* LT)
         return -1;
     }
 
-    fprintf(stderr, "sizeof(LT->labAr) / sizeof(label) = %zu\n", sizeof(LT->labAr) / sizeof(label));
+    fprintf(stderr, "sizeof(LT->labAr) / sizeof(label) = %zu\n", LT->lnum * sizeof(label) / sizeof(label));
 
-    for(size_t i = 0; i < (sizeof(LT->labAr) / sizeof(label)); i++)
+    for(size_t i = 0; i < LT->lnum * sizeof(label) / sizeof(label); i++)
     {
-        fprintf(fp, "#### [%zu]   %d : \"%32s\"", i, LT->labAr[i].ipTarg, LT->labAr[i].name);
+        fprintf(fp, "#### [%zu]   %u : \"%32s\"", i, LT->labAr[i].ipTarg, LT->labAr[i].name);
         if(i == LT->lnum)
         {
             fprintf(fp, " <<<<<");
@@ -51,7 +51,7 @@ int LTDump(LabelTable* LT)
     fprintf(stderr, "\n\n");
     for(size_t i = 0; i < LT->lnum; i++)
     {
-        fprintf(stderr, "#### [%zu]  IPTARG = %d : NAME = \"%s\"", i, LT->labAr[i].ipTarg, LT->labAr[i].name);
+        fprintf(stderr, "#### [%zu]  IPTARG = %u : NAME = \"%s\"", i, LT->labAr[i].ipTarg, LT->labAr[i].name);
         if(i == LT->lnum)
         {
             fprintf(stderr, " <<<<<");
@@ -62,15 +62,15 @@ int LTDump(LabelTable* LT)
     return 0;
 }
 
-int FindLabel(LabelTable* lt, char* buffer)
+size_t FindLabel(LabelTable* LT, char* buffer)
 {
-    for(size_t i = 0; i < lt->lnum; i++)
+    for(size_t i = 0; i < LT->lnum; i++)
     {
-        if(strcmp(buffer, lt->labAr[i].name) == 0)
+        if(strcmp(buffer, LT->labAr[i].name) == 0)
         {
             return i;
         }
     }
-    return -1;
+    return SIZE_MAX - 1;
 }
 

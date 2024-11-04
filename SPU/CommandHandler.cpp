@@ -3,7 +3,7 @@
 
 int doCommand(SPU* Baikal)
 {
-    CommandsStruct[Baikal->cmdSheet.buf[Baikal->ip]].HandleFunc(Baikal);
+    return CommandsStruct[Baikal->cmdSheet.buf[Baikal->ip]].HandleFunc(Baikal);
 }
 
 
@@ -102,7 +102,7 @@ int HandlePop(SPU* Baikal)
 
     Baikal->ip++;
 
-    uint8_t ArgCode = Baikal->cmdSheet.buf[Baikal->ip];
+    char ArgCode = Baikal->cmdSheet.buf[Baikal->ip];
     
     Baikal->ip++;
 
@@ -417,5 +417,4 @@ int HandleUnknown(SPU* Baikal)
 {
     fprintf(stderr, "Unknown command\n");
     abort();
-    return -1;
 }

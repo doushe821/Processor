@@ -43,17 +43,6 @@ int StackInit(Stack_t** stk, size_t InitCapacity, size_t ElemSize)
     (*stk)->elSize = ElemSize;
     (*stk)->size = 0;
     (*stk)->initialised = 1;
-
-    #ifndef NDEBUG
-    (*stk)->StructCanaryGuardTop = StructCanaryGuardTopREF;
-    (*stk)->StructCanaryGuardBot = StructCanaryGuardBotREF;
-
-    *(int*)(*stk)->data = DataCanaryGuardBotREF;
-    *(int*)((char*)(*stk)->data + ((*stk)->capacity + 1)*(*stk)->elSize) = DataCanaryGuardTopREF;
-
-    (*stk)->DataHash = hash((*stk)->data, (*stk)->capacity + 2);
-    (*stk)->StructHash = hash(stk, sizeof(Stack_t));
-    #endif // NDEBUG
     
     return NO_ERRORS;
 }
@@ -78,7 +67,7 @@ int StackDtor(Stack_t* stk)
 
 int StackPush(Stack_t* stk, void* elem)
 {
-    STACK_ASSERT(stk); 
+     
 
     if(stk->size >= stk->capacity)
     {
@@ -90,7 +79,7 @@ int StackPush(Stack_t* stk, void* elem)
         }
     }
     
-    cpybytes((char*)stk->data + (stk->size ON_DEBUG( + 1))*stk->elSize, elem, stk->elSize);
+    memcpy((char*)stk->data + (stk->size ON_DEBUG( + 1))*stk->elSize, elem, stk->elSize);
     stk->size++;
     
     #ifndef NDEBUG
@@ -98,7 +87,7 @@ int StackPush(Stack_t* stk, void* elem)
     stk->StructHash = hash(stk, sizeof(Stack_t));
     #endif //NDEBUG
 
-    STACK_ASSERT(stk);
+    
 
     return NO_ERRORS;
 }
@@ -146,7 +135,7 @@ int VStackInit(Stack_t** stk, size_t InitCapacity)
 
 int VStackPush(Stack_t* stk, const void* elem, size_t size)
 {
-    if(stk->size >= stk->capacity)
+    if(stk->size >= stk->capacity / 1.5)
     {
         if(StackResize(stk, false) != 0)
         {
@@ -155,8 +144,7 @@ int VStackPush(Stack_t* stk, const void* elem, size_t size)
             return ALLOC_ERROR;
         }
     }
-
-    cpybytes((char*)stk->data + stk->size, elem, size);
+    memcpy((char*)stk->data + stk->size, elem, size);
     stk->size += size;
     return NO_ERRORS;
 }
@@ -185,7 +173,7 @@ void* GetDataPointer(Stack_t* stk)
 int StackPop(Stack_t* stk, void* elem)
 {
     
-    STACK_ASSERT(stk);
+    
 
     if(stk->size <= 0)
     {
@@ -205,9 +193,9 @@ int StackPop(Stack_t* stk, void* elem)
         
     }
 
-    cpybytes(elem, (char*)stk->data + stk->size*stk->elSize, stk->elSize);
+    memcpy(elem, (char*)stk->data + stk->size*stk->elSize, stk->elSize);
     
-    cpybytes((char*)stk->data + stk->size*stk->elSize, POISON_PTR, stk->elSize);
+    memcpy((char*)stk->data + stk->size*stk->elSize, POISON_PTR, stk->elSize);
     
     stk->size--;
 
@@ -216,16 +204,12 @@ int StackPop(Stack_t* stk, void* elem)
     stk->DataHash = hash(stk->data, stk->capacity + 2);
     stk->StructHash = hash(stk, sizeof(Stack_t));
     #endif //NDEBUG
-
-    STACK_ASSERT(stk);
     
     return NO_ERRORS;
 }
 
 int FStackPop(Stack_t* stk)
 {
-        
-    STACK_ASSERT(stk);
 
     if(stk->size <= 0)
     {
@@ -245,7 +229,7 @@ int FStackPop(Stack_t* stk)
         
     }
     
-    cpybytes((char*)stk->data + stk->size*stk->elSize, POISON_PTR, stk->elSize);
+    memcpy((char*)stk->data + stk->size*stk->elSize, POISON_PTR, stk->elSize);
     
     stk->size--;
 
@@ -255,7 +239,7 @@ int FStackPop(Stack_t* stk)
     stk->StructHash = hash(stk, sizeof(Stack_t));
     #endif //NDEBUG
 
-    STACK_ASSERT(stk);
+    
     
     return NO_ERRORS;
 }
@@ -263,7 +247,7 @@ int FStackPop(Stack_t* stk)
 int StackResize(Stack_t* stk, bool downSizeFlag)
 {
 
-    //STACK_ASSERT(stk);
+    //
 
     if(downSizeFlag)
     {
@@ -276,12 +260,6 @@ int StackResize(Stack_t* stk, bool downSizeFlag)
         }
 
         stk->capacity /= REALLOC_COEF;
-
-        /*#ifndef NDEBUG
-        *(int*)((char*)stk->data + (stk->capacity + 1)*stk->elSize) = DataCanaryGuardTopREF;     
-        stk->DataHash = hash(stk->data, stk->capacity + 2);
-        stk->StructHash = hash(stk, sizeof(Stack_t));
-        #endif // NDEBUG*/
 
         return NO_ERRORS;
     }
@@ -296,22 +274,9 @@ int StackResize(Stack_t* stk, bool downSizeFlag)
 
         stk->capacity *= REALLOC_COEF;
 
-        /*#ifndef NDEBUG
-        stk->DataHash = hash(stk->data, stk->capacity + 2);
-        stk->StructHash = hash(stk, sizeof(Stack_t));
-        *(int*)((char*)stk->data + (stk->capacity + 1)*stk->elSize) = DataCanaryGuardTopREF;
-        #endif // NDEBUG*/
-
         return NO_ERRORS;
     } 
 
-    /*#ifndef NDEBUG
-    stk->DataHash = hash(stk->data, stk->capacity + 2);
-    stk->StructHash = hash(stk, sizeof(Stack_t));
-    #endif // NDEBUG*/
-
-
-    //STACK_ASSERT(stk);
     return NO_ERRORS;
 }
 
@@ -337,8 +302,8 @@ void* wrecalloc(void* ptr, size_t num, size_t size, size_t PrevSize) //POISON
         return NULL;
     }
     
-    memset(ON_DEBUG((char*))tptr ON_DEBUG( + 1*size) , POISON, (num - 1 ON_DEBUG( - 1))*size);
-    memcpy((char*)tptr, ptr, (PrevSize ON_DEBUG(+ 1))*size);
+    memset(ON_DEBUG((char*))tptr ON_DEBUG( + 1*size) , POISON, (num - 1)*size);
+    memcpy((char*)tptr, ptr, (PrevSize)*size);
     
     free(ptr);
     

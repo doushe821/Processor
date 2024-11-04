@@ -8,7 +8,6 @@
 #include <unistd.h>
 #include <inttypes.h>
 
-#include "CommandHandler.h"
 #include "../Stack/Stack.h"
 #include "../FileManager.h"
 #include "../doublecmp.h"
@@ -16,6 +15,25 @@
 
 #include "../BigMoney.h"
 
+struct Buffer
+{
+    char*  buf;
+    int    err;
+    size_t size;
+};
+
+struct SPU
+{
+    Buffer   cmdSheet;
+    size_t   ip;
+
+    Stack_t* stk;
+    Stack_t* CallStk;
+
+    double   Reg[10];
+    char     ram[65536];
+    
+};
 
 
 const uint32_t RAM_MASK = 4;

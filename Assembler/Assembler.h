@@ -12,10 +12,12 @@
 #include "../FileManager.h"
 #include "LabelTable.h"
 
+#define NDEBUG
+
 #include "../Stack/Stack.h"
 #include "../Stack/StackDB.h"
 #include "../Commands.h"
-#include "CommandParser.h"
+
 
 #ifndef NDEBUG
 
@@ -33,6 +35,24 @@ const uint32_t H_SIGN = 44001;
 const int PARSE_FUNC_NUMBER = 7;
 
 
+struct Files
+{
+    FILE* source;
+    FILE* object;
+    bool  err;
+};
+
+struct Assembly_t
+{
+    Stack_t*    cmdStack;
+    Files       files;
+    LabelTable  LTable;
+    Stack_t*    LStack;
+    char*       Source;
+    size_t      SourceSize;
+};
+
+
 enum ErrCodes
 {
     FOPEN_ERROR = 1,
@@ -46,6 +66,7 @@ enum ErrCodes
     SYNTAX_ERROR,
     MEMORY_REALOCATION_FAILURE,
     HANDLER_ERROR,
+    CORRUPTED_LABELS,
 };
 
 

@@ -10,7 +10,8 @@
 #include <math.h>
 
 #include "hash.h"
-#include "cpybytes.h"
+
+//#define NDEBUG
 
 #ifndef NDEBUG
 #define ON_DEBUG(code) code

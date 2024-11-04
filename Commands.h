@@ -4,13 +4,10 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
-#include "Assembler/CommandParser.h"
-#include "SPU/CommandHandler.h"
-
 
 const size_t ARGLEN_MAX = 64;
 const size_t COMMANDNAME_MAX = 32; 
-const size_t NUMBER_OF_COMMANDS = 32;
+const int NUMBER_OF_COMMANDS = 32;
 
 enum commands_codes
 {
@@ -43,6 +40,45 @@ enum commands_codes
     CMD_HLT     = 0x001F,
 };
 
+struct SPU;
+struct Assembly_t;
+
+int HandlePush  (SPU* Baikal);
+int HandleAdd   (SPU* Baikal);
+int HandleSub   (SPU* Baikal);
+int HandleDiv   (SPU* Baikal);
+int HandleMul   (SPU* Baikal);
+int HandlePow   (SPU* Baikal);
+int HandleSqrt  (SPU* Baikal);
+int HandleSin   (SPU* Baikal);
+int HandleOut   (SPU* Baikal);
+int HandlePop   (SPU* Baikal);
+int HandleJmp   (SPU* Baikal);
+int HandleJmb   (SPU* Baikal);
+int HandleJma   (SPU* Baikal);
+int HandleJme   (SPU* Baikal);
+int HandleJmn   (SPU* Baikal);
+int HandleJmbe  (SPU* Baikal);
+int HandleJmae  (SPU* Baikal);
+int HandleCall  (SPU* Baikal);
+int HandleRet   (SPU* Baikal);
+int HandleSleep (SPU* Baikal);
+int HandleDraw  (SPU* Baikal);
+int HandleIn    (SPU* Baikal);
+int HandleHlt   (SPU* Baikal);
+int HandleUnknown(SPU* Baikal);
+
+
+int ParseJump (Assembly_t* Asm, char* buffer);
+int ParsePush (Assembly_t* Asm, char* buffer);
+int ParsePop  (Assembly_t* Asm, char* buffer);
+int ParseCall (Assembly_t* Asm, char* buffer);
+int ParseSleep(Assembly_t* Asm, char* buffer);
+int ParseDraw (Assembly_t* Asm, char* buffer); 
+int ParseNoArg(Assembly_t* Asm, char* buffer);
+int ParseUnknown(Assembly_t* Asm, char* buffer);
+
+
 struct Command_t
 {
     char Name[COMMANDNAME_MAX];
@@ -51,7 +87,6 @@ struct Command_t
     int (*HandleFunc)(SPU*);
     int HasArg;
 };
-
 
 const Command_t CommandsStruct[NUMBER_OF_COMMANDS] = // TODO CODE GEN
 {
@@ -75,13 +110,13 @@ const Command_t CommandsStruct[NUMBER_OF_COMMANDS] = // TODO CODE GEN
     {"in"   ,  17, ParseNoArg  , HandleIn     , 0},
     {"NULL" ,  18, ParseUnknown, HandleUnknown, 0},
     {"NULL" ,  19, ParseUnknown, HandleUnknown, 0},
-    {"jmp"  ,  20, ParseJump    , HandleJmp   , 1},
-    {"jmb"  ,  21, ParseJump    , HandleJmb   , 1},
-    {"jma"  ,  22, ParseJump    , HandleJma   , 1},
-    {"jme"  ,  23, ParseJump    , HandleJme   , 1},
-    {"jmn"  ,  24, ParseJump    , HandleJmn   , 1},
-    {"jmbe" ,  25, ParseJump    , HandleJmbe  , 1},
-    {"jmae" ,  26, ParseJump   , HandleJmae  ,  1},
+    {"jmp"  ,  20, ParseJump   , HandleJmp    , 1},
+    {"jmb"  ,  21, ParseJump   , HandleJmb    , 1},
+    {"jma"  ,  22, ParseJump   , HandleJma    , 1},
+    {"jme"  ,  23, ParseJump   , HandleJme    , 1},
+    {"jmn"  ,  24, ParseJump   , HandleJmn    , 1},
+    {"jmbe" ,  25, ParseJump   , HandleJmbe   , 1},
+    {"jmae" ,  26, ParseJump   , HandleJmae   , 1},
     {"call" ,  27, ParseCall   , HandleCall   , 1},
     {"ret"  ,  28, ParseNoArg  , HandleRet    , 0},
     {"sleep",  29, ParseSleep  , HandleSleep  , 1},
